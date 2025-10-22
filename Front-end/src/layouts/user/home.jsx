@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Carousel, Spin, message } from "antd";
-import banner1 from "../../../assets/banner.png";
-import banner2 from "../../../assets/banner2.png";
-import banner3 from "../../../assets/banner3.png";
-
-import tulanh from "../../../assets/tu-lanh-samsung.jpg";
-import "./Home.css";
+import banner4 from "../../assets/banner4.jpg";
+import banner5 from "../../assets/banner5.jpg";
+import banner6 from "../../assets/banner6.jpg";
+import tulanh from "../../assets/tu-lanh-samsung.jpg";
 
 function Home() {
   const [products, setProducts] = useState([]);
@@ -20,8 +18,7 @@ function Home() {
         id: 1,
         name: "Tủ lạnh Samsung Inverter 256L RT25M4032BY/SV",
         price: 8490000,
-        image:
-          tulanh,
+        image: tulanh,
         brand: "Samsung",
         stock: 5,
       },
@@ -92,51 +89,84 @@ function Home() {
     setProducts(fakeProducts);
   }, []);
 
+  // Lớp CSS dùng chung cho các button
+  const buttonBaseStyles =
+    "flex-1 border-none p-2.5 rounded-lg font-semibold cursor-pointer transition duration-300 ease-in-out";
+
   return (
-    <div className="homepage">
+    <div className="flex flex-col gap-[60px] pb-10 max-w-[1200px] mx-auto">
       {contextHolder}
       <Spin spinning={spinning} fullscreen />
 
       {/* Banner */}
       <Carousel autoplay autoplaySpeed={3000}>
-        {[banner1, banner2, banner3].map((img, i) => (
-          <div className="homepage-banner" key={i}>
-            <img src={img} alt={`Banner ${i + 1}`} />
+        {[banner4, banner5, banner6].map((img, i) => (
+          <div
+            className="w-full h-[350px] rounded-[10px] overflow-hidden flex justify-center items-center"
+            key={i}
+          >
+            <img
+              src={img}
+              alt={`Banner ${i + 1}`}
+              className="w-full h-full object-cover"
+            />
           </div>
         ))}
       </Carousel>
 
       {/* Sản phẩm nổi bật */}
-      <section className="homepage-section">
-        <div className="section-header">
-          <span>Sản phẩm nổi bật</span>
-          <Link to="/products">
+      <section className="flex flex-col gap-[25px]">
+        <div className="flex items-center justify-between">
+          <span className="font-bold text-[22px]">Sản phẩm nổi bật</span>
+          <Link
+            to="/products"
+            className="flex items-center gap-2 text-gray-500 font-semibold"
+          >
             <span>Xem tất cả</span>
             <ion-icon name="arrow-forward"></ion-icon>
           </Link>
         </div>
 
-        <div className="product-list">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-[25px]">
           {products.map((product) => (
-            <div className="product-card" key={product.id}>
+            <div
+              className="bg-white rounded-2xl shadow-[0_2px_6px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col transition-all duration-300 ease-in-out hover:-translate-y-[5px] hover:shadow-[0_10px_18px_rgba(0,0,0,0.2)]"
+              key={product.id}
+            >
               <div className="product-image">
-                <img src={product.image} alt={product.name} />
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-[220px] object-cover pt-2.5"
+                />
               </div>
 
-              <div className="product-info">
-                <h3>{product.name}</h3>
-                <p className="brand">Thương hiệu: {product.brand}</p>
-                <p className="price">
+              <div className="p-[15px] flex-1">
+                <h3 className="text-base font-semibold mb-[5px] text-gray-800">
+                  {product.name}
+                </h3>
+                <p className="text-gray-500 text-sm mb-[5px]">
+                  Thương hiệu: {product.brand}
+                </p>
+                <p className="text-[#e53935] font-bold text-lg mb-1">
                   {product.price.toLocaleString("vi-VN")} đ
                 </p>
-                <p className="stock">
+                <p className="text-sm text-gray-600">
                   Tồn kho: {product.stock > 0 ? product.stock : "Hết hàng"}
                 </p>
               </div>
 
-              <div className="product-actions">
-                <button className="detail-btn">Chi tiết</button>
-                <button className="add-btn">Thêm vào giỏ</button>
+              <div className="flex justify-between px-[15px] pt-[10px] pb-[15px] gap-2.5">
+                <button
+                  className={`${buttonBaseStyles} bg-white border border-[#1a73e8] text-[#1a73e8] hover:bg-[#2980b9] hover:text-white`}
+                >
+                  Chi tiết
+                </button>
+                <button
+                  className={`${buttonBaseStyles} bg-[#3498db] text-white hover:bg-[#2980b9]`}
+                >
+                  Thêm vào giỏ
+                </button>
               </div>
             </div>
           ))}

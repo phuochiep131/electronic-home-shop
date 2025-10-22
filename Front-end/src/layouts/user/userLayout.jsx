@@ -1,36 +1,37 @@
 import React, { useEffect, useRef } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
-import Footer from "../../components/footer/footer";
-import Header from "../../components/header/header";
-import Home from "./Home/home";
-
-import "./userLayout.css";
+import Header from "../../components/header.jsx";
+import Footer from "../../components/footer.jsx";
+import Home from "./home.jsx";
 
 function UserLayout() {
-    const userContentRef = useRef(null);
-    const location = useLocation();
+  const userContentRef = useRef(null);
+  const location = useLocation();
 
-    useEffect(() => {
-        if (userContentRef.current) {
-            userContentRef.current.scrollTop = 0;
-        }
-    }, [location]);
+  useEffect(() => {
+    if (userContentRef.current) {
+      userContentRef.current.scrollTop = 0;
+    }
+  }, [location]);
 
-    return (
-        <div className="UserLayout">
-            <div className="User-content" ref={userContentRef}>
-                <Header />
-                    <div className="content-fill">
-                        <Routes>
-                            <Route path="/" element={<Home />} />                                                      
-                        </Routes>
-                    </div>
-                <Footer />
-            </div>
+  return (
+    <div className="flex w-full">
+      <div
+        className="flex flex-col flex-1 min-h-screen justify-between overflow-y-auto"
+        ref={userContentRef}
+      >
+        <Header />
+
+        <div className="p-8 h-full">
+          <Routes>
+            <Route path="/" element={<Home />} />
+          </Routes>
         </div>
 
-    )
+        <Footer />
+      </div>
+    </div>
+  );
 }
-
 
 export default UserLayout;
