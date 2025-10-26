@@ -1,16 +1,17 @@
-
 import "./Login.css"
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Checkbox, Form, Input, message, Spin } from 'antd';
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from 'axios';
 import { useState } from "react";
+import { useAuth } from "../../../context/AuthContext";
 
 function Login() {
-
     const navigate = useNavigate();
     const location = useLocation();
     const stateData = location.state;
+
+    const { dispatch } = useAuth();
 
     const [messageApi, contextHolder] = message.useMessage();
     const [spinning, setSpinning] = useState(false);
@@ -27,29 +28,25 @@ function Login() {
         messageApi.open({
             key: 'login',
             type: 'error',
-            content: 'Tên đăng nhập mật khẩu không chính xác',
+            content: 'Tên đăng nhập hoặc mật khẩu không chính xác',
         });
     };
 
     const onFinish = (values) => {
-
-        console.log(values.username)
-        console.log(values.password)
+        setSpinning(true);
         
-        axios.post(`http://localhost:3005/api/auth/login`, {
+        axios.post(`http://localhost:5000/api/auth/login`, {
             username: values.username,
             password: values.password
         }, {
             withCredentials: true
         })
-            .then(response => {
-                console.log(response.data);
-                localStorage.setItem('user', JSON.stringify(response.data.user));
-                console.log("Đã lưu user:", localStorage.getItem('user'));
-                setTimeout(() => {
-                    successMessage();
-                }, 500)
-                setSpinning(true);
+        .then(response => {
+            if (response.data && response.data.user) {
+                dispatch({ type: 'AUTH_SUCCESS', payload: response.data.user });
+                
+                successMessage();
+                
                 setTimeout(() => {
                     setSpinning(false);
                     if(stateData?.action === "redirect"){
@@ -57,23 +54,18 @@ function Login() {
                     } else {
                         navigate("/");
                     }
-                }, 1500);
-            })
-            .catch(error => {
-                console.error('Error fetching data:', error);
-                setTimeout(() => {
-                    errorMessage();
-                }, 1000)
-                setSpinning(true);
-                setTimeout(() => {
-                    setSpinning(false);
-                }, 2000);
-            });
+                }, 1000);
+            } else {
+                errorMessage();
+                setSpinning(false);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+            errorMessage();
+            setSpinning(false);
+        });
     };
-
-    // useEffect(() => {
-    //     // console.log(stateData);
-    // }, [])
 
     return (
         <div className="Login">
@@ -82,9 +74,7 @@ function Login() {
             <Form
                 name="reflow_login"
                 className="login-form"
-                initialValues={{
-                    remember: true,
-                }}
+                initialValues={{ remember: true }}
                 onFinish={onFinish}
                 style={{ width: 350 }}
             >

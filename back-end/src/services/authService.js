@@ -1,8 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-
-const SECRET_KEY = "websitedodiengiadung";
+const config = require('../config/jwt');
 
 async function registerUser(data) {
 	const {
@@ -33,20 +32,21 @@ async function registerUser(data) {
 
 async function loginUser(username, password) {
 	const user = await User.findOne({ username });
-	if (!user) throw new Error('Không tìm thấy người dùng!');
+	if (!user) throw new Error('Tên đăng nhập hoặc mật khẩu không chính xác!');
 
 	const isMatch = await bcrypt.compare(password, user.password);
-	if (!isMatch) throw new Error('Sai mật khẩu!');
+	if (!isMatch) throw new Error('Tên đăng nhập hoặc mật khẩu không chính xác!');
 
 	const token = jwt.sign(
 		{ id: user._id, role: user.role },
-		SECRET_KEY,
+		config.SECRET_KEY,
 		{ expiresIn: '1h' }
 	);
 
-	return { success: true, token };
-}
+    const { password: userPassword, ...userInfo } = user._doc;
 
+	return { user: userInfo, token };
+}
 module.exports = {
 	registerUser,
 	loginUser,

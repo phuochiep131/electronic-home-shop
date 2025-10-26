@@ -1,9 +1,8 @@
-/* --- Header Styles --- */
 .site-header {
     background-color: #ffffff;
     padding: 15px 0;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    position: sticky;
+    position: fixed;;
     top: 0;
     z-index: 1000;
     width: 100%;
@@ -65,6 +64,11 @@
     width: 100%;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+}
+
 .header-actions .btn {
     border: none;
     padding: 10px 22px;
@@ -99,7 +103,7 @@
 }
 
 .menu-toggle {
-    display: none; /* Ẩn trên màn hình lớn */
+    display: none;
     background: none;
     border: none;
     font-size: 1.5em;
@@ -107,36 +111,84 @@
     color: #333;
     z-index: 1100;
 }
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
 
+.cart-icon {
+  font-size: 1.5em;
+  color: #333;
+  text-decoration: none;
+}
 
-/* --- Responsive Design for Header --- */
-@media (max-width: 992px) {
-    .main-nav, .header-actions {
-        display: none; /* Ẩn menu và nút trên mobile */
-    }
+.user-avatar {
+  position: relative;
+  cursor: pointer;
+}
 
-    .menu-toggle {
-        display: block; /* Hiện nút hamburger */
-    }
+.user-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ddd;
+}
 
-    .main-nav.active {
-        display: flex;
-        flex-direction: column;
-        position: absolute;
-        top: 70px; /* Chiều cao của header */
-        left: 0;
-        width: 100%;
-        background-color: white;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        padding: 20px 0;
-        text-align: center;
-    }
+.user-popup {
+  position: absolute;
+  top: 55px;
+  right: 0;
+  width: 250px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  z-index: 1100;
+  border: 1px solid #eee;
+}
 
-    .main-nav.active ul {
-        flex-direction: column;
-    }
+.popup-user-info {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 5px;
+}
 
-    .main-nav.active ul li {
-        margin: 15px 0;
-    }
+.popup-user-info strong {
+  display: block;
+  font-size: 1.1em;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.popup-user-info span {
+    font-size: 0.9em;
+    color: #7f8c8d;
+}
+
+.user-popup a,
+.user-popup .popup-logout {
+  text-decoration: none;
+  color: #333;
+  padding: 12px 15px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.2s ease;
+  font-size: 0.95em;
+}
+
+.user-popup a:hover,
+.user-popup .popup-logout:hover {
+  background-color: #f5f5f5;
+}
+
+.popup-logout {
+  cursor: pointer;
+  color: #e74c3c;
 }

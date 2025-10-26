@@ -1,8 +1,8 @@
-// middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
 const config = require('../config/jwt');
+const User = require('../models/User');
 
-const authenticate = (req, res, next) => {
+const authenticate = async (req, res, next) => {
     
     const token = req.cookies.token;
     if (!token) {
@@ -10,10 +10,16 @@ const authenticate = (req, res, next) => {
     }
 
     try {
-        const secretKey = config.SECRET_KEY
-        const decoded = jwt.verify(token, secretKey);
-        req.user = decoded.user;
-        //console.log('Authenticated user:', req.user);
+        const secretKey = config.SECRET_KEY;
+        const decoded = jwt.verify(token, secretKey); // Giải mã token để lấy { id, role }
+
+        const user = await User.findById(decoded.id).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found in database' });
+        }
+        req.user = user;
+        
         next();
     } catch (err) {
         console.error(err);
@@ -22,7 +28,6 @@ const authenticate = (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-
     if (!req.user || req.user.role !== 'Admin') {
         return res.status(403).json({ message: 'Forbidden - Admin access required' });
     } 

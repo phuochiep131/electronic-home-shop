@@ -1,7 +1,8 @@
 .homepage {
   display: flex;
   flex-direction: column;
-  gap: 60px;
+  gap: 40px;
+  padding-top: 80px;
   padding-bottom: 40px;
 }
 
@@ -37,7 +38,7 @@
 
 .section-header span {
   font-weight: 700;
-  font-size: 22px;
+  font-size: 17px;
 }
 
 .section-header a {

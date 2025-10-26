@@ -31,7 +31,7 @@ function Register() {
 
     const onFinish = (values) => {
 
-        axios.post(`http://localhost:3005/api/auth/register`, {
+        axios.post(`http://localhost:5000/api/auth/register`, {
             fullname: values.name,
             email: values.email,
             username: values.username,
