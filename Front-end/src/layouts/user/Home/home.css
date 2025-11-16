@@ -148,3 +148,47 @@
 .add-btn:hover {
   background-color: #2980b9;
 }
+
+/* Tag giảm giá */
+.product-image {
+  position: relative;
+}
+
+.discount-tag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: #e74c3c;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+/* Hiển thị giá */
+.price-container {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.new-price {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #c0392b;
+}
+
+.old-price {
+  font-size: 0.9em;
+  color: #7f8c8d;
+  text-decoration: line-through;
+}
+
+.price {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #2c3e50;
+  margin: 10px 0;
+}

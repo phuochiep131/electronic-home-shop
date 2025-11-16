@@ -3,6 +3,8 @@ import { Route, Routes, useLocation } from "react-router-dom";
 import Footer from "../../components/footer/footer";
 import Header from "../../components/header/header";
 import Home from "./Home/home";
+import Products from "./Products/Products";
+import ProductDetail from "./ProductDetail/ProductDetail";
 
 import "./userLayout.css";
 
@@ -22,7 +24,9 @@ function UserLayout() {
                 <Header />
                     <div className="content-fill">
                         <Routes>
-                            <Route path="/" element={<Home />} />                                                      
+                            <Route path="/" element={<Home />} />
+                            <Route path="/products" element={<Products />}/>
+                            <Route path="/products/:productId" element={<ProductDetail />} />                                                       
                         </Routes>
                     </div>
                 <Footer />
