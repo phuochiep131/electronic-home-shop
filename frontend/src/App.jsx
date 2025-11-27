@@ -7,6 +7,13 @@ import Register from "./pages/Register";
 import Cart from "./pages/Cart";
 import ProductDetail from "./pages/ProductDetail";
 import Profile from "./pages/Profile";
+import CategoryPage from "./pages/CategoryPage";
+
+//admin
+import AdminRoute from "./pages/admin/AdminRoute";
+import AdminLayout from "./pages/admin/AdminLayout";
+import Dashboard from "./pages/admin/Dashboard";
+import ProductManager from "./pages/admin/ProductManager";
 
 // --- LAYOUT COMPONENT ---
 // Layout này giúp Navbar và Footer luôn hiển thị, chỉ có phần giữa (Outlet) thay đổi
@@ -42,6 +49,7 @@ function App() {
         <Route path="cart" element={<Cart />} />
         <Route path="product/:id" element={<ProductDetail />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/category/:id" element={<CategoryPage />} />
 
         {/* Route động cho danh mục sản phẩm (khớp với link trong Navbar) */}
         {/* Ví dụ: /category/tu-lanh */}
@@ -64,6 +72,17 @@ function App() {
             </div>
           }
         />
+      </Route>
+
+      {/* --- ROUTES ADMIN (Được bảo vệ) --- */}
+      <Route path="/admin" element={<AdminRoute />}>
+        <Route element={<AdminLayout />}>
+          {/* Mặc định vào /admin sẽ nhảy tới Dashboard */}
+          <Route index element={<Dashboard />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="products" element={<ProductManager />} />
+          {/* Thêm các route khác: orders, users... */}
+        </Route>
       </Route>
     </Routes>
   );
