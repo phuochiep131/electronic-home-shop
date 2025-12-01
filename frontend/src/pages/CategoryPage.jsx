@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react'; // Bỏ useState
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import axios from 'axios';
 import { 
     ChevronRight, 
     Home, 
@@ -10,48 +11,66 @@ import {
     Heart 
 } from 'lucide-react';
 
-// --- MOCK DATA ---
-const CATEGORIES = [
-    { id: 1, name: "Tủ lạnh" },
-    { id: 2, name: "Máy giặt" },
-    { id: 3, name: "Tivi" },
-    { id: 4, name: "Gia dụng bếp" },
-    { id: 5, name: "Điện thoại" },
-    { id: 6, name: "Điều hòa" },
-];
-
-const ALL_PRODUCTS = [
-    { id: 1, categoryId: 1, name: "Tủ lạnh Samsung Inverter 236L", price: 6490000, originalPrice: 8900000, rating: 4.8, reviews: 128, image: "https://placehold.co/400x400/e2e8f0/1e293b?text=Samsung+Fridge" },
-    { id: 11, categoryId: 1, name: "Tủ lạnh Panasonic Inverter 300L", price: 8500000, originalPrice: 10500000, rating: 4.5, reviews: 50, image: "https://placehold.co/400x400/e2e8f0/1e293b?text=Panasonic+Fridge" },
-    { id: 2, categoryId: 2, name: "Máy giặt LG AI DD 9kg", price: 8990000, originalPrice: 11990000, rating: 4.9, reviews: 85, image: "https://placehold.co/400x400/e2e8f0/1e293b?text=LG+Washer" },
-    { id: 6, categoryId: 4, name: "Nồi cơm điện tử Sharp 1.8L", price: 1850000, originalPrice: 2500000, rating: 4.5, reviews: 99, image: "https://placehold.co/400x400/e2e8f0/1e293b?text=Sharp+Cooker" },
-    { id: 101, categoryId: 4, name: "Nồi chiên không dầu Philips 5L", price: 1590000, originalPrice: 2500000, rating: 4.7, reviews: 200, image: "https://placehold.co/300x300/e2e8f0/1e293b?text=Air+Fryer" },
-];
+// Cấu hình URL backend
+const API_URL = 'http://localhost:5000/api';
 
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 };
 
 const CategoryPage = () => {
-    const { id } = useParams();
+    const { id } = useParams(); // Đây là _id của MongoDB (VD: 656a1b...)
     
-    // --- SỬA LỖI Ở ĐÂY ---
-    // Không dùng useState/useEffect để tính toán dữ liệu nữa.
-    // Tính trực tiếp mỗi lần render. React xử lý việc này rất nhanh.
-    
-    const categoryId = parseInt(id); // Chuyển id URL thành số
-    
-    // 1. Tìm tên danh mục trực tiếp
-    const currentCategory = CATEGORIES.find(cat => cat.id === categoryId);
-    const categoryName = currentCategory ? currentCategory.name : "Sản phẩm";
+    // --- STATE QUẢN LÝ DỮ LIỆU ---
+    const [products, setProducts] = useState([]);
+    const [categoryName, setCategoryName] = useState("");
+    const [loading, setLoading] = useState(true);
 
-    // 2. Lọc sản phẩm trực tiếp
-    const products = ALL_PRODUCTS.filter(p => p.categoryId === categoryId);
-
-    // useEffect bây giờ chỉ dùng để scroll lên đầu trang (Side effect)
+    // --- GỌI API ---
     useEffect(() => {
-        window.scrollTo(0, 0);
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Gọi song song 2 API để lấy thông tin danh mục và danh sách sản phẩm
+                // Backend của bạn đã có sẵn router.get('/:id') cho category và filter ?category=... cho product
+                const [categoryRes, productRes] = await Promise.all([
+                    axios.get(`${API_URL}/categories/${id}`),
+                    axios.get(`${API_URL}/products?category=${id}`)
+                ]);
+
+                // 1. Set tên danh mục
+                if (categoryRes.data) {
+                    setCategoryName(categoryRes.data.category_name);
+                }
+
+                // 2. Set danh sách sản phẩm
+                setProducts(productRes.data);
+
+            } catch (error) {
+                console.error("Lỗi tải dữ liệu danh mục:", error);
+                setCategoryName("Không tìm thấy danh mục");
+            } finally {
+                setLoading(false);
+                // Cuộn lên đầu trang
+                window.scrollTo(0, 0);
+            }
+        };
+
+        if (id) {
+            fetchData();
+        }
     }, [id]);
+
+    // --- MÀN HÌNH LOADING ---
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center space-x-2 bg-gray-50">
+                <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce"></div>
+                <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce delay-100"></div>
+                <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce delay-200"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-gray-50 min-h-screen pb-12 font-sans">
@@ -88,43 +107,70 @@ const CategoryPage = () => {
                 {/* Product Grid */}
                 {products.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                        {products.map((product) => (
-                            <Link to={`/product/${product.id}`} key={product.id}>
-                                <div className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col h-full">
-                                    <div className="relative p-4 bg-gray-50 h-56 flex items-center justify-center">
-                                        <img src={product.image} alt={product.name} className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" />
-                                        <button className="absolute right-2 top-2 bg-white p-2 rounded-full shadow hover:bg-red-50 hover:text-red-500 text-gray-400 transition-colors opacity-0 group-hover:opacity-100">
-                                            <Heart size={18} />
-                                        </button>
-                                        <button className="absolute bottom-0 left-0 right-0 bg-blue-600 text-white py-3 font-semibold translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex items-center justify-center gap-2">
-                                            <ShoppingCart size={18} /> Thêm vào giỏ
-                                        </button>
-                                    </div>
-                                    <div className="p-4 flex-1 flex flex-col">
-                                        <h3 className="text-gray-800 font-medium text-sm md:text-base line-clamp-2 mb-2 h-10 md:h-12 leading-tight group-hover:text-blue-600 transition-colors">
-                                            {product.name}
-                                        </h3>
-                                        <div className="flex items-center gap-1 mb-2">
-                                            <div className="flex text-yellow-400 text-xs">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star key={i} size={12} fill={i < Math.floor(product.rating) ? "currentColor" : "none"} className={i < Math.floor(product.rating) ? "" : "text-gray-300"} />
-                                                ))}
-                                            </div>
-                                            <span className="text-xs text-gray-400">({product.reviews})</span>
+                        {products.map((product) => {
+                            // Tính toán giá hiển thị (DB lưu price là giá gốc, discount là %)
+                            const originalPrice = product.price;
+                            const discount = product.discount || 0;
+                            const currentPrice = originalPrice * (1 - discount / 100);
+                            
+                            // Mock rating/reviews vì DB chưa có trường này
+                            const ratingMock = 4.5;
+                            const reviewsMock = Math.floor(Math.random() * 100) + 1;
+
+                            return (
+                                <Link to={`/product/${product._id}`} key={product._id}>
+                                    <div className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col h-full">
+                                        <div className="relative p-4 bg-gray-50 h-56 flex items-center justify-center">
+                                            <img 
+                                                src={product.image_url || "https://placehold.co/400x400?text=Product"} 
+                                                alt={product.product_name} 
+                                                className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" 
+                                            />
+                                            
+                                            {/* Nút Heart */}
+                                            <button className="absolute right-2 top-2 bg-white p-2 rounded-full shadow hover:bg-red-50 hover:text-red-500 text-gray-400 transition-colors opacity-0 group-hover:opacity-100">
+                                                <Heart size={18} />
+                                            </button>
+
+                                            {/* Nút Giỏ hàng */}
+                                            <button className="absolute bottom-0 left-0 right-0 bg-blue-600 text-white py-3 font-semibold translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex items-center justify-center gap-2">
+                                                <ShoppingCart size={18} /> Thêm vào giỏ
+                                            </button>
                                         </div>
-                                        <div className="mt-auto">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="text-red-600 font-bold text-lg">{formatCurrency(product.price)}</span>
-                                                <span className="bg-red-50 text-red-600 text-xs font-bold px-1.5 py-0.5 rounded">-{Math.round((1 - product.price / product.originalPrice) * 100)}%</span>
+
+                                        <div className="p-4 flex-1 flex flex-col">
+                                            <h3 className="text-gray-800 font-medium text-sm md:text-base line-clamp-2 mb-2 h-10 md:h-12 leading-tight group-hover:text-blue-600 transition-colors">
+                                                {product.product_name}
+                                            </h3>
+
+                                            <div className="flex items-center gap-1 mb-2">
+                                                <div className="flex text-yellow-400 text-xs">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <Star key={i} size={12} fill={i < Math.floor(ratingMock) ? "currentColor" : "none"} className={i < Math.floor(ratingMock) ? "" : "text-gray-300"} />
+                                                    ))}
+                                                </div>
+                                                <span className="text-xs text-gray-400">({reviewsMock})</span>
                                             </div>
-                                            <div className="text-gray-400 text-xs line-through mt-0.5">{formatCurrency(product.originalPrice)}</div>
+
+                                            <div className="mt-auto">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-red-600 font-bold text-lg">{formatCurrency(currentPrice)}</span>
+                                                    {discount > 0 && (
+                                                        <span className="bg-red-50 text-red-600 text-xs font-bold px-1.5 py-0.5 rounded">-{discount}%</span>
+                                                    )}
+                                                </div>
+                                                {discount > 0 && (
+                                                    <div className="text-gray-400 text-xs line-through mt-0.5">{formatCurrency(originalPrice)}</div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </Link>
-                        ))}
+                                </Link>
+                            );
+                        })}
                     </div>
                 ) : (
+                    // Hiển thị khi không có sản phẩm nào
                     <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
                         <p className="text-gray-500 text-lg">Chưa có sản phẩm nào trong danh mục này.</p>
                         <Link to="/" className="text-blue-600 font-medium hover:underline mt-2 inline-block">Quay lại trang chủ</Link>
