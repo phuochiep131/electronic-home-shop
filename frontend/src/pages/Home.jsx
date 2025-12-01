@@ -285,9 +285,7 @@ const Home = () => {
                                             </button>
                                         </div>
 
-                                        <button className="absolute bottom-0 left-0 right-0 bg-blue-600 text-white py-3 font-semibold translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex items-center justify-center gap-2">
-                                            <ShoppingCart size={18} /> Thêm vào giỏ
-                                        </button>
+                                        
                                     </div>
 
                                     {/* Info Area */}
@@ -321,8 +319,13 @@ const Home = () => {
                                                     {formatCurrency(originalPrice)}
                                                 </div>
                                             )}
+                                            
                                         </div>
+                                        
                                     </div>
+                                    <button className=" m-3 left-0 right-0 bg-blue-600 text-white py-3 font-semibold flex items-center justify-center gap-2 cursor-pointer hover:shadow-xl transition-all duration-300 rounded-xl">
+                                            <ShoppingCart size={18} /> Thêm vào giỏ
+                                        </button>
                                 </div>
                             </Link>
                         );
