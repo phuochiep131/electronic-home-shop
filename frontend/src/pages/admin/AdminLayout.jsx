@@ -36,6 +36,7 @@ const AdminLayout = () => {
       name: "Tổng quan",
       icon: <LayoutDashboard size={20} />,
     },
+    { path: "/admin/categories", name: "Danh mục", icon: <Users size={20} /> },
     { path: "/admin/products", name: "Sản phẩm", icon: <Package size={20} /> },
     {
       path: "/admin/orders",

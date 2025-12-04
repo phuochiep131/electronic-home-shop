@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const { authenticate } = require('../middlewares/authMiddleware');
 
-router.get('/info', authenticate, userController.getUserInfo);
+// Định nghĩa các routes
+router.post('/', userController.create);
+router.get('/', userController.getAll);
+router.get('/:id', userController.getOne);
+router.put('/:id', userController.update);
+router.delete('/:id', userController.remove);
 
 module.exports = router;

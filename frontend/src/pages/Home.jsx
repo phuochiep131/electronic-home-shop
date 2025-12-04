@@ -189,7 +189,8 @@ const Home = () => {
                                 const originalPrice = product.price;
                                 const currentPrice = originalPrice * (1 - product.discount / 100);
                                 // Giả lập số lượng đã bán (vì DB chưa có field này)
-                                const soldMock = Math.floor(Math.random() * 200) + 10;
+                                // const soldMock = Math.floor(Math.random() * 200) + 10;
+                                const soldMock = Math.floor(200) + 10;
 
                                 return (
                                     <div key={product._id} className="border border-orange-200 rounded-lg p-3 hover:shadow-lg transition-shadow relative bg-white">
