@@ -1,16 +1,12 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Plus, Edit, Trash2, Search, User, Mail, Phone, 
-  Calendar, MapPin, ShieldCheck, X, Save, Loader2, AlertCircle,
-  UploadCloud 
+  Calendar, MapPin, ShieldCheck, X, Save, Loader2, AlertCircle
 } from "lucide-react";
 
-// --- CẤU HÌNH API ---
+// Cấu hình đường dẫn API Backend của bạn
+// Khi deploy thì đổi thành domain thật, ví dụ: 'https://api.mywebsite.com/api/users'
 const API_URL = "http://localhost:5000/api/user"; 
-
-// --- CẤU HÌNH CLOUDINARY ---
-const CLOUD_NAME = "detransaw";      // Thay bằng tên Cloud của bạn
-const UPLOAD_PRESET = "web_upload";  // Thay bằng preset của bạn
 
 const UserManager = () => {
   const [users, setUsers] = useState([]);
@@ -24,11 +20,6 @@ const UserManager = () => {
   const [editingId, setEditingId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- STATE CHO ẢNH & UPLOAD ---
-  const [selectedImageFile, setSelectedImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(""); 
-  const fileInputRef = useRef(null);
-
   // Form State
   const initialFormState = {
     username: "",
@@ -39,24 +30,28 @@ const UserManager = () => {
     gender: "Nam",
     address: "",
     birth_date: "",
-    avatar: "" // Lưu link ảnh string
+    avatar: ""
   };
   const [formData, setFormData] = useState(initialFormState);
 
-  // --- 1. FETCH DATA ---
+  // --- 1. FETCH DATA (GET) ---
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch(API_URL, { credentials: "include" });
+      // Dùng fetch hoặc axios.get(API_URL)
+      const response = await fetch(API_URL);
       if (!response.ok) throw new Error("Không thể kết nối đến Server");
       
       const data = await response.json();
-      setUsers(Array.isArray(data) ? data : []);
+      console.log(data);
+      setUsers(data);
       setError(null);
     } catch (err) {
       console.error("Lỗi fetch data:", err);
-      setError("Lỗi kết nối API.");
-      setUsers([]);
+      // MOCK DATA: Để bạn xem trước giao diện khi chưa bật Backend
+      // Xóa dòng này khi chạy thật
+      setUsers(mockUsers); 
+      setError("Không thể kết nối API (Đang hiển thị dữ liệu mẫu). Hãy chắc chắn Backend Node.js đang chạy.");
     } finally {
       setLoading(false);
     }
@@ -66,43 +61,8 @@ const UserManager = () => {
     fetchUsers();
   }, []);
 
-  // --- 2. HÀM UPLOAD CLOUDINARY (CLIENT SIDE) ---
-  const uploadToCloudinary = async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", UPLOAD_PRESET);
+  // --- 2. HANDLERS ---
 
-    try {
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        { method: "POST", body: formData }
-      );
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      return data.secure_url; // Trả về link ảnh HTTPS
-    } catch (error) {
-      console.error("Lỗi upload ảnh:", error);
-      throw new Error("Không thể upload ảnh. Kiểm tra mạng hoặc Cloudinary config.");
-    }
-  };
-
-  // --- 3. HANDLERS ẢNH ---
-  const handleImageFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-      e.target.value = "";
-    }
-  };
-
-  const handleRemoveImage = () => {
-    setSelectedImageFile(null);
-    setImagePreview("");
-    setFormData(prev => ({ ...prev, avatar: "" }));
-  };
-
-  // --- 4. FORM HANDLERS ---
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -111,8 +71,6 @@ const UserManager = () => {
   const openAddModal = () => {
     setEditingId(null);
     setFormData(initialFormState);
-    setSelectedImageFile(null);
-    setImagePreview("");
     setIsModalOpen(true);
   };
 
@@ -129,49 +87,33 @@ const UserManager = () => {
       birth_date: user.birth_date ? user.birth_date.split('T')[0] : "",
       avatar: user.avatar || ""
     });
-    
-    setImagePreview(user.avatar || "");
-    setSelectedImageFile(null);
     setIsModalOpen(true);
   };
 
-  // --- 5. SUBMIT (XỬ LÝ LOGIC UPLOAD + SAVE) ---
+  // --- 3. SUBMIT (POST / PUT) ---
   const handleSave = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      let finalAvatarUrl = formData.avatar;
-
-      // BƯỚC 1: Nếu có chọn ảnh mới -> Upload lên Cloudinary trước
-      if (selectedImageFile) {
-        finalAvatarUrl = await uploadToCloudinary(selectedImageFile);
-      }
-
-      // BƯỚC 2: Chuẩn bị dữ liệu JSON để gửi về Backend
-      const payload = { 
-          ...formData, 
-          avatar: finalAvatarUrl // Gán link ảnh mới vào payload
-      };
-
-      if (!editingId) {
-          payload.password = "User@123"; // Password mặc định
-      }
-
       const method = editingId ? "PUT" : "POST";
       const url = editingId ? `${API_URL}/${editingId}` : API_URL;
+      
+      const payload = { ...formData };
+      if (!editingId) {
+          // Chỉ thêm password mặc định khi tạo mới
+          payload.password = "User@123"; 
+      }
 
-      // BƯỚC 3: Gửi dữ liệu về Backend (Dạng JSON)
       const response = await fetch(url, {
         method: method,
-        credentials: "include", // Cookie Auth
-        headers: { "Content-Type": "application/json" }, // Quan trọng: Gửi JSON
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
-      const resData = await response.json();
-      if (!response.ok) throw new Error(resData.error || "Lỗi khi lưu dữ liệu");
+      if (!response.ok) throw new Error("Lỗi khi lưu dữ liệu");
 
+      // Reload lại danh sách sau khi lưu thành công
       await fetchUsers();
       setIsModalOpen(false);
       alert(editingId ? "Cập nhật thành công!" : "Thêm mới thành công!");
@@ -184,21 +126,22 @@ const UserManager = () => {
     }
   };
 
-  // --- 6. DELETE ---
+  // --- 4. DELETE (DELETE) ---
   const handleDelete = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
 
     try {
       const response = await fetch(`${API_URL}/${id}`, {
         method: "DELETE",
-        credentials: "include",
       });
 
       if (!response.ok) throw new Error("Lỗi khi xóa");
       
+      // Cập nhật lại state UI ngay lập tức để cảm giác nhanh hơn
       setUsers(prev => prev.filter(u => u._id !== id));
       
     } catch (err) {
+      console.error(err);
       alert("Xóa thất bại: " + err.message);
     }
   };
@@ -237,6 +180,14 @@ const UserManager = () => {
           <Plus size={18} /> Thêm mới
         </button>
       </div>
+
+      {/* Error Banner if API fails */}
+      {error && (
+        <div className="mb-6 bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded-lg flex items-center gap-3">
+          <AlertCircle size={20} />
+          <span className="text-sm">{error}</span>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col md:flex-row gap-4 border border-gray-100">
@@ -374,42 +325,9 @@ const UserManager = () => {
               </button>
             </div>
             
-            <form onSubmit={handleSave} className="p-6 space-y-6">
-              
-              {/* --- KHU VỰC UPLOAD AVATAR --- */}
-              <div className="flex flex-col items-center gap-4">
-                 <div className="relative w-24 h-24 rounded-full border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center overflow-hidden group">
-                    {imagePreview ? (
-                        <>
-                            <img src={imagePreview} alt="Avatar Preview" className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-1">
-                                <button type="button" onClick={() => fileInputRef.current.click()} className="text-white text-xs hover:underline">Đổi ảnh</button>
-                                <button type="button" onClick={handleRemoveImage} className="text-red-300 text-xs hover:underline">Xóa</button>
-                            </div>
-                        </>
-                    ) : (
-                        <div 
-                            onClick={() => fileInputRef.current.click()} 
-                            className="flex flex-col items-center justify-center cursor-pointer w-full h-full text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
-                        >
-                            <UploadCloud size={24} />
-                            <span className="text-[10px] mt-1">Upload</span>
-                        </div>
-                    )}
-                 </div>
-                 {/* Input file ẩn */}
-                 <input 
-                    type="file" 
-                    accept="image/*" 
-                    ref={fileInputRef} 
-                    onChange={handleImageFileChange} 
-                    className="hidden" 
-                 />
-                 <p className="text-xs text-gray-500">Ảnh đại diện</p>
-              </div>
-
-              {/* --- CÁC INPUT TEXT --- */}
+            <form onSubmit={handleSave} className="p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Inputs giống như trước, mapping đúng field của Mongoose */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Username <span className="text-red-500">*</span></label>
                   <input required name="username" value={formData.username} onChange={handleInputChange} className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" />
@@ -445,13 +363,17 @@ const UserManager = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Ngày sinh</label>
                   <input type="date" name="birth_date" value={formData.birth_date} onChange={handleInputChange} className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Link Avatar</label>
+                  <input name="avatar" value={formData.avatar} onChange={handleInputChange} className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
                   <input name="address" value={formData.address} onChange={handleInputChange} className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t sticky bottom-0 bg-white">
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Hủy bỏ</button>
                 <button type="submit" disabled={isSubmitting} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50">
                   {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}

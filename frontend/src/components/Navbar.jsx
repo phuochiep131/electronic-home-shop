@@ -20,13 +20,14 @@ import {
 
 // --- IMPORT CONTEXT ---
 import { useAuth } from "../context/AuthContext";
-// Đảm bảo đường dẫn ảnh đúng hoặc dùng link online nếu chưa có file
-import defaultAvatar from "../assets/react.svg"; 
+import { useCart } from "../context/CartContext";
+import defaultAvatar from "../assets/react.svg";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { cartCount } = useCart();
 
   // Lấy state từ AuthContext
   const { state, dispatch } = useAuth();
@@ -113,7 +114,6 @@ const Navbar = () => {
 
           {/* User Actions (Desktop) */}
           <div className="hidden md:flex items-center gap-6">
-            
             {/* --- USER ACCOUNT DROPDOWN --- */}
             <div className="relative group z-20">
               <div className="flex flex-col items-center cursor-pointer pb-2 md:pb-0">
@@ -125,7 +125,7 @@ const Navbar = () => {
                       className="w-full h-full object-cover"
                       // Fallback nếu ảnh lỗi
                       onError={(e) => {
-                        e.target.onerror = null; 
+                        e.target.onerror = null;
                         e.target.src = "https://placehold.co/100x100?text=User";
                       }}
                     />
@@ -159,7 +159,8 @@ const Navbar = () => {
 
                     <div className="p-1">
                       {/* --- KIỂM TRA QUYỀN ADMIN --- */}
-                      {(currentUser.role === "Admin" || currentUser.role === "admin") && (
+                      {(currentUser.role === "Admin" ||
+                        currentUser.role === "admin") && (
                         <Link
                           to="/admin/dashboard"
                           className="flex items-center gap-2 w-full px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors mb-1 font-semibold"
@@ -227,9 +228,12 @@ const Navbar = () => {
                   size={24}
                   className="text-gray-600 group-hover:text-blue-600 transition-colors"
                 />
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
-                  3
-                </span>
+                {/* Hiển thị số lượng thật */}
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
+                    {cartCount > 99 ? "99+" : cartCount}
+                  </span>
+                )}
               </div>
               <span className="text-xs text-gray-500 mt-1">Giỏ hàng</span>
             </Link>
@@ -271,7 +275,8 @@ const Navbar = () => {
                     >
                       Hồ sơ
                     </Link>
-                    {(currentUser.role === "Admin" || currentUser.role === "admin") && (
+                    {(currentUser.role === "Admin" ||
+                      currentUser.role === "admin") && (
                       <Link
                         to="/admin/dashboard"
                         className="text-center py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 shadow-sm"

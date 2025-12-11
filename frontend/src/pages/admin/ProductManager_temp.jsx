@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   Edit,
@@ -11,14 +11,11 @@ import {
   Loader2,
   RefreshCcw,
   Filter,
-  UploadCloud,
 } from "lucide-react";
 
-// --- CẤU HÌNH ---
+// URL API
 const API_URL = "http://localhost:5000/api/products";
 const CATEGORY_API_URL = "http://localhost:5000/api/categories";
-const CLOUD_NAME = "detransaw";
-const UPLOAD_PRESET = "web_upload";
 
 const ProductManager = () => {
   const [products, setProducts] = useState([]);
@@ -31,11 +28,6 @@ const ProductManager = () => {
   const [editingId, setEditingId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- STATE ẢNH ---
-  const [selectedImageFile, setSelectedImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState("");
-  const fileInputRef = useRef(null);
-
   // Form State
   const initialFormState = {
     product_name: "",
@@ -43,7 +35,7 @@ const ProductManager = () => {
     quantity: "",
     category_id: "",
     description: "",
-    image_url: "", // Lưu link ảnh string
+    image_url: "",
     discount: 0,
     size: "",
     color: "",
@@ -57,18 +49,21 @@ const ProductManager = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Gọi song song 2 API
       const [resProducts, resCategories] = await Promise.all([
-        fetch(API_URL, { credentials: "include" }),
+        fetch(API_URL, { credentials: "include" }), // Thêm credentials để an toàn
         fetch(CATEGORY_API_URL, { credentials: "include" }),
       ]);
 
       const dataProducts = await resProducts.json();
       const dataCategories = await resCategories.json();
 
-      if (resProducts.ok)
+      if (resProducts.ok) {
         setProducts(Array.isArray(dataProducts) ? dataProducts : []);
-      if (resCategories.ok)
+      }
+      if (resCategories.ok) {
         setCategories(Array.isArray(dataCategories) ? dataCategories : []);
+      }
     } catch (error) {
       console.error("Lỗi tải dữ liệu:", error);
     } finally {
@@ -80,52 +75,18 @@ const ProductManager = () => {
     fetchData();
   }, []);
 
-  // --- 2. UPLOAD CLOUDINARY ---
-  const uploadToCloudinary = async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", UPLOAD_PRESET);
-
-    try {
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        { method: "POST", body: formData }
-      );
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      return data.secure_url;
-    } catch (error) {
-      console.error("Lỗi upload ảnh:", error);
-      throw new Error("Không thể upload ảnh lên Cloudinary.");
-    }
-  };
-
-  // --- 3. HANDLERS ---
-  const handleImageFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-      e.target.value = "";
-    }
-  };
-
-  const handleRemoveImage = () => {
-    setSelectedImageFile(null);
-    setImagePreview("");
-    setFormData((prev) => ({ ...prev, image_url: "" }));
-  };
-
+  // --- 2. HANDLERS ---
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const openAddModal = () => {
     setEditingId(null);
     setFormData(initialFormState);
-    setSelectedImageFile(null);
-    setImagePreview("");
     setIsModalOpen(true);
   };
 
@@ -135,6 +96,7 @@ const ProductManager = () => {
       product_name: product.product_name || "",
       price: product.price || "",
       quantity: product.quantity || "",
+      // Kiểm tra kỹ: nếu category_id là object (đã populate) thì lấy ._id, nếu là string thì lấy luôn
       category_id: product.category_id
         ? typeof product.category_id === "object"
           ? product.category_id._id
@@ -149,12 +111,10 @@ const ProductManager = () => {
       origin: product.origin || "",
       warranty: product.warranty || "",
     });
-    setImagePreview(product.image_url || "");
-    setSelectedImageFile(null);
     setIsModalOpen(true);
   };
 
-  // --- 4. SAVE ---
+  // --- 3. SAVE ---
   const handleSave = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -166,23 +126,14 @@ const ProductManager = () => {
     }
 
     try {
-      let finalImageUrl = formData.image_url;
-
-      // Nếu có chọn ảnh mới -> Upload
-      if (selectedImageFile) {
-        finalImageUrl = await uploadToCloudinary(selectedImageFile);
-      }
-
-      const payload = { ...formData, image_url: finalImageUrl };
-
       const method = editingId ? "PUT" : "POST";
       const url = editingId ? `${API_URL}/${editingId}` : API_URL;
 
       const res = await fetch(url, {
         method: method,
-        credentials: "include",
-        headers: { "Content-Type": "application/json" }, // Gửi JSON
-        body: JSON.stringify(payload),
+        credentials: "include", // Quan trọng: Gửi Cookie Auth
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
 
       const data = await res.json();
@@ -191,7 +142,7 @@ const ProductManager = () => {
 
       alert(editingId ? "Cập nhật thành công!" : "Thêm mới thành công!");
       setIsModalOpen(false);
-      fetchData();
+      fetchData(); // Load lại để cập nhật bảng
     } catch (error) {
       alert("Lỗi: " + error.message);
     } finally {
@@ -199,13 +150,13 @@ const ProductManager = () => {
     }
   };
 
-  // --- 5. DELETE ---
+  // --- 4. DELETE ---
   const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
       try {
         const res = await fetch(`${API_URL}/${id}`, {
           method: "DELETE",
-          credentials: "include",
+          credentials: "include", // Quan trọng: Gửi Cookie Auth
         });
 
         if (res.ok) {
@@ -220,13 +171,14 @@ const ProductManager = () => {
     }
   };
 
+  // Filter
   const filteredProducts = products.filter((p) =>
     (p.product_name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="relative min-h-screen pb-10 font-sans text-gray-800">
-      {/* Header & Filter giữ nguyên */}
+      {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2 text-slate-800">
@@ -246,6 +198,7 @@ const ProductManager = () => {
         </button>
       </div>
 
+      {/* Tools Bar */}
       <div className="bg-white p-4 rounded-2xl shadow-sm mb-6 border border-gray-100 flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
           <Search
@@ -260,20 +213,23 @@ const ProductManager = () => {
             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
           />
         </div>
+
+        {/* Nút Refresh */}
         <button
           onClick={fetchData}
           className="p-2.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 border border-gray-200 transition-colors"
+          title="Tải lại dữ liệu"
         >
           <RefreshCcw size={20} className={loading ? "animate-spin" : ""} />
         </button>
       </div>
 
-      {/* Table */}
+      {/* Table Section */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1000px]">
-            <thead className="bg-gray-50 text-gray-700 uppercase text-xs font-bold">
-              <tr>
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-100 text-xs uppercase text-gray-500 font-semibold tracking-wider">
                 <th className="py-4 px-6 w-20 text-center">Ảnh</th>
                 <th className="py-4 px-6 w-1/4">Thông tin sản phẩm</th>
                 <th className="py-4 px-6">Danh mục</th>
@@ -283,74 +239,112 @@ const ProductManager = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredProducts.map((p) => (
-                <tr
-                  key={p._id}
-                  className="hover:bg-gray-50/80 transition-colors group"
-                >
-                  <td className="py-4 px-6">
-                    <div className="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden relative">
-                      {p.image_url ? (
-                        <img
-                          src={p.image_url}
-                          alt={p.product_name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <ImageIcon size={20} className="text-gray-400" />
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="font-semibold text-gray-800 text-base mb-0.5">
-                      {p.product_name}
-                    </div>
-                    <div className="text-xs text-gray-500 line-clamp-1 max-w-[250px]">
-                      {p.description}
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                      {p.category_id?.name || "Chưa phân loại"}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-right">
-                    <div className="font-bold text-gray-800">
-                      {new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(p.price)}
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-center">
-                    {p.quantity > 0 ? (
-                      <span className="text-green-600 font-bold bg-green-50 px-2 py-1 rounded-md text-xs">
-                        {p.quantity} sẵn hàng
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <Loader2
+                        className="animate-spin text-blue-500"
+                        size={32}
+                      />
+                      <span className="text-sm font-medium">
+                        Đang tải dữ liệu...
                       </span>
-                    ) : (
-                      <span className="text-red-600 font-bold bg-red-50 px-2 py-1 rounded-md text-xs">
-                        Hết hàng
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                      <button
-                        onClick={() => openEditModal(p)}
-                        className="p-2 bg-white border border-gray-200 text-blue-600 rounded-lg hover:bg-blue-50 hover:border-blue-200 shadow-sm transition-all"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(p._id)}
-                        className="p-2 bg-white border border-gray-200 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-200 shadow-sm transition-all"
-                      >
-                        <Trash2 size={16} />
-                      </button>
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : filteredProducts.length > 0 ? (
+                filteredProducts.map((p) => (
+                  <tr
+                    key={p._id}
+                    className="hover:bg-gray-50/80 transition-colors group"
+                  >
+                    <td className="py-4 px-6">
+                      <div className="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden relative">
+                        {p.image_url ? (
+                          <img
+                            src={p.image_url}
+                            alt={p.product_name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = ""; // Fallback nếu ảnh lỗi
+                            }}
+                          />
+                        ) : (
+                          <ImageIcon size={20} className="text-gray-400" />
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="font-semibold text-gray-800 text-base mb-0.5">
+                        {p.product_name}
+                      </div>
+                      <div
+                        className="text-xs text-gray-500 line-clamp-1 max-w-[250px]"
+                        title={p.description}
+                      >
+                        {p.description || "Không có mô tả"}
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                        {/* Sử dụng optional chaining để tránh lỗi crash nếu chưa populate */}
+                        {p.category_id?.name || "Chưa phân loại"}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      <div className="font-bold text-gray-800">
+                        {new Intl.NumberFormat("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }).format(p.price)}
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 text-center">
+                      {p.quantity > 0 ? (
+                        <span className="text-green-600 font-bold bg-green-50 px-2 py-1 rounded-md text-xs">
+                          {p.quantity} sẵn hàng
+                        </span>
+                      ) : (
+                        <span className="text-red-600 font-bold bg-red-50 px-2 py-1 rounded-md text-xs">
+                          Hết hàng
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                        <button
+                          onClick={() => openEditModal(p)}
+                          className="p-2 bg-white border border-gray-200 text-blue-600 rounded-lg hover:bg-blue-50 hover:border-blue-200 shadow-sm transition-all"
+                          title="Sửa"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(p._id)}
+                          className="p-2 bg-white border border-gray-200 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-200 shadow-sm transition-all"
+                          title="Xóa"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center">
+                      <Package size={48} className="text-gray-300 mb-3" />
+                      <p className="text-lg font-medium">
+                        Chưa có sản phẩm nào
+                      </p>
+                      <p className="text-sm">Bấm "Thêm sản phẩm" để bắt đầu</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -376,10 +370,11 @@ const ProductManager = () => {
               onSubmit={handleSave}
               className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5"
             >
+              {/* Cột Trái */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Tên sản phẩm *
+                    Tên sản phẩm <span className="text-red-500">*</span>
                   </label>
                   <input
                     required
@@ -387,11 +382,13 @@ const ProductManager = () => {
                     value={formData.product_name}
                     onChange={handleInputChange}
                     className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                    placeholder="VD: Áo Thun Polo"
                   />
                 </div>
+
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Danh mục *
+                    Danh mục <span className="text-red-500">*</span>
                   </label>
                   <select
                     required
@@ -408,10 +405,11 @@ const ProductManager = () => {
                     ))}
                   </select>
                 </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Giá (VNĐ) *
+                      Giá (VNĐ) <span className="text-red-500">*</span>
                     </label>
                     <input
                       required
@@ -420,11 +418,12 @@ const ProductManager = () => {
                       value={formData.price}
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                      placeholder="0"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Kho *
+                      Kho <span className="text-red-500">*</span>
                     </label>
                     <input
                       required
@@ -433,59 +432,26 @@ const ProductManager = () => {
                       value={formData.quantity}
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                      placeholder="0"
                     />
                   </div>
                 </div>
 
-                {/* UPLOAD ẢNH */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Hình ảnh sản phẩm
+                    Link Ảnh
                   </label>
                   <input
-                    type="file"
-                    accept="image/*"
-                    ref={fileInputRef}
-                    onChange={handleImageFileChange}
-                    className="hidden"
+                    name="image_url"
+                    value={formData.image_url}
+                    onChange={handleInputChange}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                    placeholder="https://..."
                   />
-
-                  {imagePreview ? (
-                    <div className="relative w-full h-40 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden group">
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-full h-full object-contain"
-                      />
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current.click()}
-                          className="bg-white text-blue-600 px-3 py-1 rounded text-xs font-medium"
-                        >
-                          Thay đổi
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleRemoveImage}
-                          className="bg-white text-red-600 px-3 py-1 rounded text-xs font-medium"
-                        >
-                          Xóa
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => fileInputRef.current.click()}
-                      className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-colors"
-                    >
-                      <UploadCloud className="text-gray-400 mb-1" />
-                      <span className="text-xs text-gray-500">Tải ảnh lên</span>
-                    </div>
-                  )}
                 </div>
               </div>
 
+              {/* Cột Phải */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -497,8 +463,10 @@ const ProductManager = () => {
                     value={formData.description}
                     onChange={handleInputChange}
                     className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none"
+                    placeholder="Mô tả sản phẩm..."
                   ></textarea>
                 </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -509,6 +477,7 @@ const ProductManager = () => {
                       value={formData.size}
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                      placeholder="S, M, L..."
                     />
                   </div>
                   <div>
@@ -520,9 +489,11 @@ const ProductManager = () => {
                       value={formData.color}
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                      placeholder="Đen, Trắng..."
                     />
                   </div>
                 </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -549,6 +520,7 @@ const ProductManager = () => {
                 </div>
               </div>
 
+              {/* Footer Actions */}
               <div className="md:col-span-2 flex justify-end gap-3 mt-4 pt-4 border-t border-gray-100">
                 <button
                   type="button"
@@ -560,13 +532,13 @@ const ProductManager = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all active:scale-95 disabled:opacity-70"
+                  className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <Loader2 className="animate-spin" size={18} />
                   ) : (
                     <Save size={18} />
-                  )}{" "}
+                  )}
                   {editingId ? "Lưu thay đổi" : "Thêm mới"}
                 </button>
               </div>

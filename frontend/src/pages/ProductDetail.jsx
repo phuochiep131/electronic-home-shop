@@ -14,6 +14,7 @@ import {
     ShoppingCart,
     Share2
 } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 
 // Cấu hình API URL
 const API_URL = 'http://localhost:5000/api';
@@ -21,13 +22,24 @@ const API_URL = 'http://localhost:5000/api';
 const ProductDetail = () => {
     const { id } = useParams();
     const [activeTab, setActiveTab] = useState('description');
-    const [quantity, setQuantity] = useState(1);
     
     // State dữ liệu
     const [product, setProduct] = useState(null);
     const [relatedProducts, setRelatedProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [mainImage, setMainImage] = useState('');
+
+    const { addToCart } = useCart();
+    const [quantity, setQuantity] = useState(1);
+
+    const handleBuyNow = async () => {
+        // Gọi hàm từ Context
+        const success = await addToCart(product._id, quantity);
+        if (success) {
+            // Có thể chuyển hướng đến trang giỏ hàng luôn nếu muốn
+            navigate('/cart');
+        }
+    };
 
     // Format tiền tệ
     const formatCurrency = (amount) => {

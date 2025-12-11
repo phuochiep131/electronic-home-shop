@@ -8,13 +8,13 @@ async function getAllProducts(query) {
         filter.category_id = query.category;
     }
     // Populate để lấy cả tên danh mục thay vì chỉ ID
-    const products = await Product.find(filter).populate('category_id', 'category_name');
+    const products = await Product.find(filter).populate('category_id', 'name');
     return products;
 }
 
 // Lấy một sản phẩm theo ID
 async function getProductById(id) {
-    const product = await Product.findById(id).populate('category_id', 'category_name');
+    const product = await Product.findById(id).populate('category_id', 'name');
     if (!product) throw new Error('Không tìm thấy sản phẩm');
     return product;
 }
