@@ -8,6 +8,9 @@ import Cart from "./pages/Cart";
 import ProductDetail from "./pages/ProductDetail";
 import Profile from "./pages/Profile";
 import CategoryPage from "./pages/CategoryPage";
+import Checkout from "./pages/Checkout";
+import OrderSuccess from "./pages/OrderSuccess";
+import MyOrders from "./pages/MyOrders";
 
 //admin
 import AdminRoute from "./pages/admin/AdminRoute";
@@ -16,6 +19,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import ProductManager from "./pages/admin/ProductManager";
 import UserManager from "./pages/admin/UserManager";
 import CategoryManager from "./pages/admin/CategoryManager";
+import OrderManager from "./pages/admin/OrderManager";
 
 // --- LAYOUT COMPONENT ---
 // Layout này giúp Navbar và Footer luôn hiển thị, chỉ có phần giữa (Outlet) thay đổi
@@ -52,6 +56,9 @@ function App() {
         <Route path="product/:id" element={<ProductDetail />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/category/:id" element={<CategoryPage />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/order-success" element={<OrderSuccess />} />
+        <Route path="/my-orders" element={<MyOrders />} />
 
         {/* Route động cho danh mục sản phẩm (khớp với link trong Navbar) */}
         {/* Ví dụ: /category/tu-lanh */}
@@ -85,7 +92,7 @@ function App() {
           <Route path="products" element={<ProductManager />} />
           <Route path="users" element={<UserManager />} />
           <Route path="categories" element={<CategoryManager />} />
-          {/* Thêm các route khác: orders, users... */}
+          <Route path="orders" element={<OrderManager />} />
         </Route>
       </Route>
     </Routes>

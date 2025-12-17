@@ -1,14 +1,20 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const orderController = require('../controllers/orderController');
-const { authenticate } = require('../middlewares/authMiddleware');
+const orderController = require("../controllers/orderController");
+const { authenticate, isAdmin } = require("../middlewares/authMiddleware");
 
 router.use(authenticate);
 
-// Tạo đơn hàng mới
-router.post('/create', orderController.create);
+// User Routes
+router.post("/create", orderController.create);
+router.get("/my-orders", orderController.getMyOrders);
 
-// Lấy lịch sử đơn hàng của người dùng hiện tại
-router.get('/my-orders', orderController.getMyOrders);
+// --- ADMIN ROUTES ---
+// Lấy tất cả đơn hàng
+router.get("/admin/all", isAdmin, orderController.getAll);
+// Cập nhật trạng thái
+router.put("/admin/status/:id", isAdmin, orderController.updateStatus);
+// Lấy chi tiết sản phẩm trong đơn (Admin xem)
+router.get("/admin/:id/items", isAdmin, orderController.getOrderDetails);
 
 module.exports = router;

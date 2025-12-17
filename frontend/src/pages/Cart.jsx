@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios"; // Import axios
 import {
   Minus,
@@ -17,6 +17,7 @@ import { useCart } from "../context/CartContext";
 
 const Cart = () => {
   // --- STATE ---
+  const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [couponCode, setCouponCode] = useState("");
@@ -410,11 +411,7 @@ const Cart = () => {
               <button
                 className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2 mb-4"
                 onClick={() => {
-                  setIsCheckingOut(true);
-                  setTimeout(() => {
-                    alert("Chuyển đến trang thanh toán...");
-                    setIsCheckingOut(false);
-                  }, 1000);
+                  navigate("/checkout");
                 }}
                 disabled={isCheckingOut}
               >
