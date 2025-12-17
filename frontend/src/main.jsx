@@ -22,6 +22,7 @@ import "./index.css";
 
 // 1. Import AuthProvider
 import { AuthProvider } from "./context/AuthContext";
+import { CartProvider } from "./context/CartContext";
 
 // 2. Import Router (nếu bạn dùng React Router ở đây)
 import { BrowserRouter } from "react-router-dom";
@@ -30,9 +31,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     {/* 3. Bọc AuthProvider ở cấp cao nhất (hoặc bên trong/ngoài Router đều được, miễn là bao Login) */}
     <AuthProvider>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <CartProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </CartProvider>
     </AuthProvider>
   </React.StrictMode>
 );

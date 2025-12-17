@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -16,15 +16,8 @@ import {
   KeyRound,
   LogOut,
   ChevronRight,
-  Loader2,
-  UploadCloud,
 } from "lucide-react";
 import defaultAvatar from "../assets/react.svg";
-
-// --- CẤU HÌNH ---
-const API_UPDATE_URL = "http://localhost:5000/api/user/update"; // Route cho user tự sửa
-const CLOUD_NAME = "detransaw";
-const UPLOAD_PRESET = "web_upload";
 
 const Profile = () => {
   const { state, dispatch } = useAuth();
@@ -34,22 +27,16 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Avatar upload states
-  const [selectedImageFile, setSelectedImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState("");
-  const fileInputRef = useRef(null);
-
-  // Form data
+  // State lưu dữ liệu form
   const [formData, setFormData] = useState({
     fullname: "",
     phone_number: "",
     address: "",
     gender: "Nam",
     birth_date: "",
-    avatar: "",
   });
 
-  // --- EFFECT: Sync Data ---
+  // --- EFFECT: Đồng bộ dữ liệu từ Context vào Form khi load trang ---
   useEffect(() => {
     if (currentUser) {
       setFormData({
@@ -57,42 +44,15 @@ const Profile = () => {
         phone_number: currentUser.phone_number || "",
         address: currentUser.address || "",
         gender: currentUser.gender || "Nam",
+        // Chuyển đổi ngày từ ISO sang YYYY-MM-DD để hiển thị trong input date
         birth_date: currentUser.birth_date
           ? currentUser.birth_date.split("T")[0]
           : "",
-        avatar: currentUser.avatar || "",
       });
-      setImagePreview(currentUser.avatar || "");
     }
   }, [currentUser]);
 
-  // --- HANDLERS ẢNH ---
-  const handleImageFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const uploadToCloudinary = async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", UPLOAD_PRESET);
-    try {
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        { method: "POST", body: formData }
-      );
-      const data = await res.json();
-      return data.secure_url;
-    } catch (error) {
-      console.error("Upload error:", error);
-      throw error;
-    }
-  };
-
-  // --- HANDLERS FORM ---
+  // --- HANDLERS ---
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -103,31 +63,20 @@ const Profile = () => {
     setIsLoading(true);
 
     try {
-      let finalAvatar = formData.avatar;
+      // Gọi API cập nhật (Bạn cần đảm bảo Backend có route này)
+      const response = await axios.put(
+        "http://localhost:5000/api/user/update",
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
 
-      // 1. Upload ảnh nếu có chọn mới
-      if (selectedImageFile) {
-        finalAvatar = await uploadToCloudinary(selectedImageFile);
-      }
-
-      // 2. Chuẩn bị payload
-      const payload = {
-        ...formData,
-        avatar: finalAvatar,
-      };
-
-      // 3. Gọi API Update
-      const response = await axios.put(API_UPDATE_URL, payload, {
-        withCredentials: true,
-      });
-
-      // 4. Update Context
+      // Cập nhật lại Context sau khi lưu thành công
       if (response.data && response.data.user) {
         dispatch({ type: "AUTH_SUCCESS", payload: response.data.user });
         alert("Cập nhật thông tin thành công!");
         setIsEditing(false);
-        // Reset file select
-        setSelectedImageFile(null);
       }
     } catch (error) {
       console.error("Lỗi cập nhật:", error);
@@ -137,17 +86,16 @@ const Profile = () => {
     }
   };
 
-  if (!currentUser)
+  if (!currentUser) {
     return (
-      <div className="p-8 text-center">
-        <Loader2 className="animate-spin inline mr-2" /> Đang tải...
-      </div>
+      <div className="p-8 text-center">Đang tải thông tin người dùng...</div>
     );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 font-sans">
       <div className="container mx-auto px-4">
-        {/* Breadcrumb */}
+        {/* Breadcrumb nhỏ */}
         <div className="flex items-center text-sm text-gray-500 mb-6">
           <Link to="/" className="hover:text-blue-600">
             Trang chủ
@@ -157,42 +105,28 @@ const Profile = () => {
         </div>
 
         <div className="flex flex-col md:flex-row gap-6">
-          {/* --- LEFT SIDEBAR --- */}
+          {/* --- 1. LEFT SIDEBAR (Menu) --- */}
           <div className="w-full md:w-1/4">
             <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+              {/* User Summary */}
               <div className="p-6 border-b border-gray-100 flex flex-col items-center text-center">
-                {/* Avatar Display / Upload Trigger */}
-                <div
-                  className="relative w-24 h-24 mb-4 group cursor-pointer"
-                  onClick={() => isEditing && fileInputRef.current.click()}
-                >
+                <div className="relative w-24 h-24 mb-4 group cursor-pointer">
                   <img
-                    src={imagePreview || defaultAvatar}
+                    src={currentUser.avatar || defaultAvatar}
                     alt="Avatar"
-                    className={`w-full h-full rounded-full object-cover border-4 ${
-                      isEditing ? "border-blue-200" : "border-gray-100"
-                    }`}
+                    className="w-full h-full rounded-full object-cover border-4 border-blue-50"
                   />
-                  {isEditing && (
-                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Camera className="text-white" size={24} />
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    ref={fileInputRef}
-                    onChange={handleImageFileChange}
-                    className="hidden"
-                  />
+                  <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="text-white" size={24} />
+                  </div>
                 </div>
-
                 <h3 className="font-bold text-gray-800 text-lg">
                   {currentUser.fullname}
                 </h3>
                 <p className="text-sm text-gray-500">{currentUser.email}</p>
               </div>
 
+              {/* Navigation */}
               <nav className="p-2">
                 <Link
                   to="/profile"
@@ -206,12 +140,20 @@ const Profile = () => {
                 >
                   <Package size={20} /> Đơn mua
                 </Link>
-                {/* ... các link khác ... */}
+                <Link
+                  to="/change-password"
+                  className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium transition-colors"
+                >
+                  <KeyRound size={20} /> Đổi mật khẩu
+                </Link>
+                <button className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors text-left">
+                  <LogOut size={20} /> Đăng xuất
+                </button>
               </nav>
             </div>
           </div>
 
-          {/* --- RIGHT CONTENT --- */}
+          {/* --- 2. RIGHT CONTENT (Profile Form) --- */}
           <div className="w-full md:w-3/4">
             <div className="bg-white rounded-xl shadow-sm p-6 md:p-8">
               <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
@@ -249,7 +191,7 @@ const Profile = () => {
                         type="text"
                         value={currentUser.username}
                         disabled
-                        className="w-full pl-10 pr-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed outline-none"
+                        className="w-full pl-10 pr-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed focus:outline-none"
                       />
                     </div>
                   </div>
@@ -268,7 +210,7 @@ const Profile = () => {
                         type="text"
                         value={currentUser.email}
                         disabled
-                        className="w-full pl-10 pr-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed outline-none"
+                        className="w-full pl-10 pr-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed focus:outline-none"
                       />
                     </div>
                   </div>
@@ -286,13 +228,13 @@ const Profile = () => {
                       disabled={!isEditing}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         !isEditing
-                          ? "bg-gray-50 border-gray-200"
+                          ? "bg-white border-gray-200 text-gray-800"
                           : "bg-white border-gray-300"
                       }`}
                     />
                   </div>
 
-                  {/* Phone */}
+                  {/* Phone Number */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Số điện thoại
@@ -310,7 +252,7 @@ const Profile = () => {
                         disabled={!isEditing}
                         className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           !isEditing
-                            ? "bg-gray-50 border-gray-200"
+                            ? "bg-white border-gray-200 text-gray-800"
                             : "bg-white border-gray-300"
                         }`}
                       />
@@ -335,7 +277,7 @@ const Profile = () => {
                         disabled={!isEditing}
                         className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           !isEditing
-                            ? "bg-gray-50 border-gray-200"
+                            ? "bg-white border-gray-200 text-gray-800"
                             : "bg-white border-gray-300"
                         }`}
                       />
@@ -348,23 +290,42 @@ const Profile = () => {
                       Giới tính
                     </label>
                     <div className="flex gap-6 mt-2">
-                      {["Nam", "Nữ", "Khác"].map((option) => (
-                        <label
-                          key={option}
-                          className="flex items-center cursor-pointer"
-                        >
-                          <input
-                            type="radio"
-                            name="gender"
-                            value={option}
-                            checked={formData.gender === option}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                            className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                          />
-                          <span className="ml-2 text-gray-700">{option}</span>
-                        </label>
-                      ))}
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="gender"
+                          value="Nam"
+                          checked={formData.gender === "Nam"}
+                          onChange={handleChange}
+                          disabled={!isEditing}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <span className="ml-2 text-gray-700">Nam</span>
+                      </label>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="gender"
+                          value="Nữ"
+                          checked={formData.gender === "Nữ"}
+                          onChange={handleChange}
+                          disabled={!isEditing}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <span className="ml-2 text-gray-700">Nữ</span>
+                      </label>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="gender"
+                          value="Khác"
+                          checked={formData.gender === "Khác"}
+                          onChange={handleChange}
+                          disabled={!isEditing}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <span className="ml-2 text-gray-700">Khác</span>
+                      </label>
                     </div>
                   </div>
 
@@ -386,7 +347,7 @@ const Profile = () => {
                         rows="3"
                         className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           !isEditing
-                            ? "bg-gray-50 border-gray-200"
+                            ? "bg-white border-gray-200 text-gray-800"
                             : "bg-white border-gray-300"
                         }`}
                       ></textarea>
@@ -394,25 +355,25 @@ const Profile = () => {
                   </div>
                 </div>
 
+                {/* Action Buttons */}
                 {isEditing && (
                   <div className="mt-8 flex items-center justify-end gap-3 animate-in fade-in slide-in-from-bottom-2">
                     <button
                       type="button"
                       onClick={() => {
                         setIsEditing(false);
-                        // Reset data về ban đầu
-                        setFormData({
-                          fullname: currentUser.fullname || "",
-                          phone_number: currentUser.phone_number || "",
-                          address: currentUser.address || "",
-                          gender: currentUser.gender || "Nam",
-                          birth_date: currentUser.birth_date
-                            ? currentUser.birth_date.split("T")[0]
-                            : "",
-                          avatar: currentUser.avatar || "",
-                        });
-                        setImagePreview(currentUser.avatar || "");
-                        setSelectedImageFile(null);
+                        // Reset lại form về dữ liệu gốc
+                        if (currentUser) {
+                          setFormData({
+                            fullname: currentUser.fullname || "",
+                            phone_number: currentUser.phone_number || "",
+                            address: currentUser.address || "",
+                            gender: currentUser.gender || "Nam",
+                            birth_date: currentUser.birth_date
+                              ? currentUser.birth_date.split("T")[0]
+                              : "",
+                          });
+                        }
                       }}
                       className="flex items-center gap-2 px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
                     >
@@ -423,11 +384,7 @@ const Profile = () => {
                       disabled={isLoading}
                       className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-70"
                     >
-                      {isLoading ? (
-                        <Loader2 className="animate-spin" size={18} />
-                      ) : (
-                        <Save size={18} />
-                      )}
+                      <Save size={18} />{" "}
                       {isLoading ? "Đang lưu..." : "Lưu thay đổi"}
                     </button>
                   </div>
