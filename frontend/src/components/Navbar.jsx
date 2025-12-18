@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
@@ -23,8 +23,12 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import defaultAvatar from "../assets/react.svg";
 
+// --- CẤU HÌNH API ---
+const API_URL = "http://localhost:5000/api";
+
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [categories, setCategories] = useState([]); // State để lưu danh sách categories
   const navigate = useNavigate();
   const location = useLocation();
   const { cartCount } = useCart();
@@ -32,6 +36,22 @@ const Navbar = () => {
   // Lấy state từ AuthContext
   const { state, dispatch } = useAuth();
   const { currentUser } = state;
+
+  // Gọi API lấy danh sách categories khi component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/categories`);
+        setCategories(response.data); // Cập nhật state categories
+      } catch (error) {
+        console.error("Lỗi khi tải danh mục:", error);
+        // Có thể set một danh sách mặc định nếu API lỗi, hoặc để mảng rỗng
+        setCategories([]);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   // Xử lý chuyển hướng đến trang login
   const handleLoginClick = () => {
@@ -42,7 +62,8 @@ const Navbar = () => {
   // Xử lý đăng xuất
   const handleLogout = async () => {
     try {
-      await axios.get("http://localhost:5000/api/auth/logout", {
+      await axios.get(`${API_URL}/auth/logout`, {
+        // Sử dụng API_URL cho nhất quán
         withCredentials: true,
       });
       dispatch({ type: "AUTH_FAILURE" });
@@ -52,14 +73,6 @@ const Navbar = () => {
       console.error("Logout failed:", error);
     }
   };
-
-  const categories = [
-    { name: "Tủ lạnh", path: "/category/tu-lanh" },
-    { name: "Máy giặt", path: "/category/may-giat" },
-    { name: "Nồi cơm điện", path: "/category/noi-com-dien" },
-    { name: "Điều hòa", path: "/category/dieu-hoa" },
-    { name: "Gia dụng bếp", path: "/category/gia-dung-bep" },
-  ];
 
   return (
     <header className="w-full bg-white shadow-md sticky top-0 z-50 font-sans">
@@ -163,7 +176,7 @@ const Navbar = () => {
                         currentUser.role === "admin") && (
                         <Link
                           to="/admin/dashboard"
-                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors mb-1 font-semibold"
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
                         >
                           <LayoutDashboard size={16} /> Trang quản trị
                         </Link>
@@ -176,7 +189,7 @@ const Navbar = () => {
                         <UserCircle size={16} /> Hồ sơ cá nhân
                       </Link>
                       <Link
-                        to="/orders"
+                        to="/my-orders"
                         className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
                       >
                         <Package size={16} /> Đơn mua
@@ -319,13 +332,17 @@ const Navbar = () => {
               </Link>
             </li>
 
-            {categories.map((cat, index) => (
-              <li key={index} className="py-2 md:py-3 border-b md:border-none">
+            {/* Render categories từ state */}
+            {categories.map((cat) => (
+              <li
+                key={cat._id}
+                className="py-2 md:py-3 border-b md:border-none"
+              >
                 <Link
-                  to={cat.path}
+                  to={`/category/${cat._id}`} // Sử dụng ID danh mục hoặc slug nếu có
                   className="text-gray-700 font-medium hover:text-blue-600 transition-colors block"
                 >
-                  {cat.name}
+                  {cat.name} {/* Hoặc cat.category_name tùy thuộc vào model */}
                 </Link>
               </li>
             ))}

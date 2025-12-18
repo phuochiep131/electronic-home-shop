@@ -60,6 +60,11 @@ const AdminLayout = () => {
       name: "Khách hàng",
       icon: <Users size={20} />,
     },
+    {
+      path: "/admin/banners",
+      name: "Banner",
+      icon: <Users size={20} />,
+    },
   ];
 
   // Tìm tên trang hiện tại để hiển thị lên Header

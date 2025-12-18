@@ -201,7 +201,7 @@ const Profile = () => {
                   <User size={20} /> Hồ sơ cá nhân
                 </Link>
                 <Link
-                  to="/orders"
+                  to="/my-orders"
                   className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium transition-colors"
                 >
                   <Package size={20} /> Đơn mua
