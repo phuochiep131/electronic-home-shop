@@ -8,6 +8,8 @@ router.use(authenticate);
 // User Routes
 router.post("/create", orderController.create);
 router.get("/my-orders", orderController.getMyOrders);
+router.get("/detail/:id", orderController.getOrderDetail);
+router.put("/cancel/:id", orderController.cancelOrder);
 
 // --- ADMIN ROUTES ---
 // Lấy tất cả đơn hàng

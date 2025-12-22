@@ -112,10 +112,57 @@ async function getOrderItems(orderId) {
   ); // Lấy tên và ảnh sản phẩm
 }
 
+// Lấy chi tiết một đơn hàng cụ thể (kèm danh sách sản phẩm)
+async function getOrderById(orderId) {
+  const order = await Order.findById(orderId).populate(
+    "user_id",
+    "fullname email phone"
+  );
+  if (!order) throw new Error("Không tìm thấy đơn hàng");
+
+  // Tìm các sản phẩm trong bảng OrderDetail
+  const items = await OrderDetail.find({ order_id: orderId }).populate(
+    "product_id"
+  );
+
+  return { order, items };
+}
+
+// [USER] Hủy đơn hàng (Chỉ cho phép khi trạng thái là pending)
+async function cancelOrder(userId, orderId) {
+  const order = await Order.findOne({ _id: orderId, user_id: userId });
+
+  if (!order) {
+    throw new Error(
+      "Không tìm thấy đơn hàng hoặc bạn không có quyền hủy đơn này."
+    );
+  }
+
+  if (order.order_status !== "pending") {
+    throw new Error("Chỉ có thể hủy đơn hàng khi đang ở trạng thái Chờ xử lý.");
+  }
+
+  // Cập nhật trạng thái
+  order.order_status = "cancelled";
+  await order.save();
+
+  // Hoàn lại số lượng tồn kho cho sản phẩm
+  const orderDetails = await OrderDetail.find({ order_id: order._id });
+  for (const item of orderDetails) {
+    await Product.findByIdAndUpdate(item.product_id, {
+      $inc: { quantity: item.quantity },
+    });
+  }
+
+  return order;
+}
+
 module.exports = {
   createOrder,
   getOrdersByUser,
   getAllOrders,
   updateOrderStatus,
   getOrderItems,
+  getOrderById,
+  cancelOrder,
 };

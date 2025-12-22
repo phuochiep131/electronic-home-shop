@@ -7,8 +7,6 @@ import {
   MapPin,
   ChevronRight,
   Loader2,
-  Search,
-  Filter,
   ShoppingBag,
 } from "lucide-react";
 
@@ -23,7 +21,6 @@ const MyOrders = () => {
   useEffect(() => {
     const fetchMyOrders = async () => {
       try {
-        // Gọi API lấy lịch sử đơn hàng
         const res = await axios.get(`${API_BASE}/orders/my-orders`, {
           withCredentials: true,
         });
@@ -36,6 +33,31 @@ const MyOrders = () => {
     };
     fetchMyOrders();
   }, []);
+
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")) return;
+
+    try {
+      await axios.put(
+        `${API_BASE}/orders/cancel/${orderId}`,
+        {}, // Body rỗng
+        { withCredentials: true }
+      );
+
+      alert("Đã hủy đơn hàng thành công!");
+
+      // Cập nhật lại danh sách đơn hàng ngay lập tức trên giao diện
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order._id === orderId
+            ? { ...order, order_status: "cancelled" }
+            : order
+        )
+      );
+    } catch (error) {
+      alert(error.response?.data?.error || "Lỗi khi hủy đơn hàng");
+    }
+  };
 
   // 2. Formatters
   const formatCurrency = (amount) =>
@@ -53,29 +75,31 @@ const MyOrders = () => {
       minute: "2-digit",
     });
 
+  // Cập nhật logic màu sắc theo đúng OrderManager
   const getStatusColor = (status) => {
     switch (status) {
       case "pending":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+        return "bg-yellow-100 text-yellow-700 border-yellow-200"; // Chờ xử lý
       case "processing":
-        return "bg-blue-100 text-blue-700 border-blue-200";
-      case "shipped":
-        return "bg-indigo-100 text-indigo-700 border-indigo-200";
+        return "bg-blue-100 text-blue-700 border-blue-200"; // Đang đóng gói
+      case "shipping": // Đã sửa từ 'shipped' thành 'shipping' cho khớp với Admin
+        return "bg-purple-100 text-purple-700 border-purple-200"; // Đang giao
       case "delivered":
-        return "bg-green-100 text-green-700 border-green-200";
+        return "bg-green-100 text-green-700 border-green-200"; // Đã giao
       case "cancelled":
-        return "bg-red-100 text-red-700 border-red-200";
+        return "bg-red-100 text-red-700 border-red-200"; // Đã hủy
       default:
         return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
+  // Cập nhật text hiển thị
   const getStatusText = (status) => {
     const map = {
       pending: "Chờ xử lý",
-      processing: "Đang chuẩn bị",
-      shipped: "Đang giao",
-      delivered: "Đã giao",
+      processing: "Đang đóng gói", // Khớp nghĩa với admin
+      shipping: "Đang giao hàng", // Khớp key 'shipping'
+      delivered: "Đã giao thành công",
       cancelled: "Đã hủy",
     };
     return map[status] || status;
@@ -86,6 +110,16 @@ const MyOrders = () => {
     filterStatus === "all"
       ? orders
       : orders.filter((order) => order.order_status === filterStatus);
+
+  // Danh sách các tab filter
+  const filterTabs = [
+    { key: "all", label: "Tất cả" },
+    { key: "pending", label: "Chờ xử lý" },
+    { key: "processing", label: "Đang đóng gói" },
+    { key: "shipping", label: "Đang giao" },
+    { key: "delivered", label: "Hoàn thành" },
+    { key: "cancelled", label: "Đã hủy" },
+  ];
 
   if (loading) {
     return (
@@ -109,19 +143,19 @@ const MyOrders = () => {
             </p>
           </div>
 
-          {/* Status Filter */}
-          <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-gray-200 shadow-sm overflow-x-auto max-w-full">
-            {["all", "pending", "shipped", "delivered"].map((status) => (
+          {/* Status Filter Tabs - Đã cập nhật đầy đủ */}
+          <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-gray-200 shadow-sm overflow-x-auto max-w-full no-scrollbar">
+            {filterTabs.map((tab) => (
               <button
-                key={status}
-                onClick={() => setFilterStatus(status)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-                  filterStatus === status
+                key={tab.key}
+                onClick={() => setFilterStatus(tab.key)}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+                  filterStatus === tab.key
                     ? "bg-blue-600 text-white shadow-sm"
                     : "text-gray-600 hover:bg-gray-50"
                 }`}
               >
-                {status === "all" ? "Tất cả" : getStatusText(status)}
+                {tab.label}
               </button>
             ))}
           </div>
@@ -183,17 +217,22 @@ const MyOrders = () => {
 
                   {/* Action Buttons */}
                   <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                    {/* Logic nút Hủy đơn hàng: Chỉ hiện khi trạng thái là Pending */}
+                    {order.order_status === "pending" && (
+                      <button
+                        onClick={() => handleCancelOrder(order._id)}
+                        className="px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors cursor-pointer"
+                      >
+                        Hủy đơn hàng
+                      </button>
+                    )}
+
                     <Link
-                      to={`/order/${order._id}`} // Nếu bạn muốn làm trang chi tiết đơn
+                      to={`/order/${order._id}`}
                       className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       Xem chi tiết
                     </Link>
-                    {order.order_status === "pending" && (
-                      <button className="px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors">
-                        Hủy đơn hàng
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>
@@ -204,10 +243,14 @@ const MyOrders = () => {
                 <ShoppingBag className="text-gray-400" size={32} />
               </div>
               <h3 className="text-lg font-medium text-gray-900">
-                Chưa có đơn hàng nào
+                Không tìm thấy đơn hàng
               </h3>
               <p className="text-gray-500 mb-6">
-                Bạn chưa mua sắm sản phẩm nào.
+                {filterStatus === "all"
+                  ? "Bạn chưa mua sắm sản phẩm nào."
+                  : `Bạn không có đơn hàng nào ở trạng thái "${getStatusText(
+                      filterStatus
+                    )}"`}
               </p>
               <Link
                 to="/"

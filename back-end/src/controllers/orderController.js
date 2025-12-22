@@ -48,10 +48,33 @@ const getOrderDetails = async (req, res) => {
   }
 };
 
+const getOrderDetail = async (req, res) => {
+  try {
+    const data = await orderService.getOrderById(req.params.id);
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
+};
+
+const cancelOrder = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const userId = req.user.id; // Lấy từ middleware authenticate
+
+    const order = await orderService.cancelOrder(userId, orderId);
+    res.status(200).json({ message: "Hủy đơn hàng thành công!", order });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
 module.exports = {
   create,
   getMyOrders,
   getAll,
   updateStatus,
   getOrderDetails,
+  getOrderDetail,
+  cancelOrder,
 };
