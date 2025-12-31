@@ -1,77 +1,67 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import React, { useEffect, useState, useMemo } from "react";
+import { useSearchParams, Link } from "react-router-dom";
 import axios from "axios";
 import {
-  ChevronRight,
   Home,
-  ArrowUpDown,
+  ChevronRight,
   SlidersHorizontal,
+  ArrowUpDown,
 } from "lucide-react";
 
-// Import Components
 import ProductCard from "../components/ProductCard";
-import FilterSidebar from "../components/FilterSidebar"; // <--- Import Sidebar dùng chung
+import FilterSidebar from "../components/FilterSidebar";
 
-const API_URL = "http://localhost:5000/api";
+const SearchPage = () => {
+  const [searchParams] = useSearchParams();
+  const keyword = searchParams.get("keyword");
 
-const CategoryPage = () => {
-  const { id } = useParams();
+  // State dữ liệu gốc từ API
+  const [originalProducts, setOriginalProducts] = useState([]);
 
-  // State dữ liệu từ API
-  const [products, setProducts] = useState([]);
-  const [categoryName, setCategoryName] = useState("");
+  // State trạng thái loading
   const [loading, setLoading] = useState(true);
 
-  // --- STATE BỘ LỌC & SẮP XẾP ---
+  // --- STATE BỘ LỌC ---
   const [sortOption, setSortOption] = useState("default");
   const [priceRange, setPriceRange] = useState("all");
   const [selectedBrands, setSelectedBrands] = useState([]);
 
-  // Fetch dữ liệu API
+  // 1. Fetch dữ liệu khi keyword thay đổi
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchSearch = async () => {
       setLoading(true);
       try {
-        const [categoryRes, productRes] = await Promise.all([
-          axios.get(`${API_URL}/categories/${id}`),
-          axios.get(`${API_URL}/products?category=${id}`),
-        ]);
-
-        if (categoryRes.data)
-          setCategoryName(
-            categoryRes.data.name || categoryRes.data.category_name
-          );
-        setProducts(productRes.data);
+        // Gọi API tìm kiếm theo keyword
+        const res = await axios.get(
+          `http://localhost:5000/api/products?keyword=${keyword}`
+        );
+        setOriginalProducts(res.data);
       } catch (error) {
-        console.error("Lỗi tải dữ liệu danh mục:", error);
-        setCategoryName("Không tìm thấy danh mục");
+        console.error("Lỗi tìm kiếm:", error);
+        setOriginalProducts([]);
       } finally {
         setLoading(false);
-        window.scrollTo(0, 0);
       }
     };
 
-    if (id) {
-      // Reset bộ lọc khi chuyển danh mục khác
-      setPriceRange("all");
-      setSelectedBrands([]);
-      setSortOption("default");
-      fetchData();
-    }
-  }, [id]);
+    if (keyword) fetchSearch();
+  }, [keyword]);
 
-  // Hàm toggle chọn thương hiệu
+  // 2. Hàm xử lý chọn thương hiệu (Checkbox logic)
   const handleBrandToggle = (brand) => {
-    setSelectedBrands((prev) =>
-      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+    setSelectedBrands(
+      (prev) =>
+        prev.includes(brand)
+          ? prev.filter((b) => b !== brand) // Bỏ chọn
+          : [...prev, brand] // Chọn thêm
     );
   };
 
-  // --- LOGIC LỌC & SẮP XẾP (Client-side) ---
+  // 3. LOGIC LỌC VÀ SẮP XẾP (Chạy mỗi khi state filter thay đổi)
   const filteredProducts = useMemo(() => {
-    let result = [...products];
+    let result = [...originalProducts];
 
-    // 1. Lọc theo Thương hiệu (Tìm trong tên sản phẩm)
+    // --- A. Lọc theo Thương hiệu (Tìm trong tên sản phẩm vì Schema chưa có field brand) ---
     if (selectedBrands.length > 0) {
       result = result.filter((product) =>
         selectedBrands.some((brand) =>
@@ -80,7 +70,7 @@ const CategoryPage = () => {
       );
     }
 
-    // 2. Lọc theo Giá (Tính giá sau giảm)
+    // --- B. Lọc theo Giá (Tính giá sau giảm) ---
     if (priceRange !== "all") {
       result = result.filter((product) => {
         const finalPrice = product.price * (1 - (product.discount || 0) / 100);
@@ -100,7 +90,7 @@ const CategoryPage = () => {
       });
     }
 
-    // 3. Sắp xếp
+    // --- C. Sắp xếp ---
     if (sortOption !== "default") {
       result.sort((a, b) => {
         const priceA = a.price * (1 - (a.discount || 0) / 100);
@@ -115,8 +105,9 @@ const CategoryPage = () => {
     }
 
     return result;
-  }, [products, priceRange, selectedBrands, sortOption]);
+  }, [originalProducts, priceRange, selectedBrands, sortOption]);
 
+  // --- Render Loading ---
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center space-x-2 bg-gray-50">
@@ -136,13 +127,13 @@ const CategoryPage = () => {
             <Home size={14} /> Trang chủ
           </Link>
           <ChevronRight size={14} className="mx-2" />
-          <span className="text-gray-900 font-medium">{categoryName}</span>
+          <span className="text-gray-900">Tìm kiếm: "{keyword}"</span>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* --- SIDEBAR BỘ LỌC (Dùng chung Component) --- */}
+          {/* --- SIDEBAR --- */}
           <FilterSidebar
             priceRange={priceRange}
             setPriceRange={setPriceRange}
@@ -150,20 +141,20 @@ const CategoryPage = () => {
             handleBrandToggle={handleBrandToggle}
           />
 
-          {/* --- MAIN CONTENT (Right) --- */}
+          {/* --- MAIN CONTENT --- */}
           <main className="flex-1">
-            {/* Header & Sort Bar */}
+            {/* Header kết quả */}
             <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <h1 className="text-xl font-bold text-gray-800">
-                {categoryName}{" "}
-                <span className="text-gray-500 text-base font-normal">
+                Kết quả tìm kiếm: "{keyword}"
+                <span className="text-gray-500 text-base font-normal ml-2">
                   ({filteredProducts.length} sản phẩm)
                 </span>
               </h1>
 
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-500 hidden md:block">
-                  Sắp xếp theo:
+                  Sắp xếp:
                 </span>
                 <div className="relative">
                   <select
@@ -171,7 +162,7 @@ const CategoryPage = () => {
                     value={sortOption}
                     onChange={(e) => setSortOption(e.target.value)}
                   >
-                    <option value="default">Nổi bật</option>
+                    <option value="default">Liên quan nhất</option>
                     <option value="price_asc">Giá: Thấp đến Cao</option>
                     <option value="price_desc">Giá: Cao đến Thấp</option>
                     <option value="newest">Hàng mới về</option>
@@ -184,11 +175,11 @@ const CategoryPage = () => {
               </div>
             </div>
 
-            {/* Product Grid */}
+            {/* Grid sản phẩm */}
             {filteredProducts.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-4">
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product._id} product={product} />
+                {filteredProducts.map((p) => (
+                  <ProductCard key={p._id} product={p} />
                 ))}
               </div>
             ) : (
@@ -196,36 +187,22 @@ const CategoryPage = () => {
                 <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 mb-4">
                   <SlidersHorizontal size={32} />
                 </div>
-                <p className="text-gray-500 text-lg">
-                  Không tìm thấy sản phẩm nào phù hợp bộ lọc.
+                <p className="text-gray-500 text-lg mb-2">
+                  Không tìm thấy sản phẩm nào phù hợp.
                 </p>
+                <p className="text-gray-400 text-sm">
+                  Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.
+                </p>
+
                 <button
                   onClick={() => {
                     setPriceRange("all");
                     setSelectedBrands([]);
                     setSortOption("default");
                   }}
-                  className="mt-4 text-blue-600 font-medium hover:underline"
+                  className="mt-6 text-blue-600 font-bold hover:underline"
                 >
-                  Xóa bộ lọc
-                </button>
-              </div>
-            )}
-
-            {/* Pagination (UI Only - Bạn có thể phát triển thêm logic phân trang sau này) */}
-            {filteredProducts.length > 0 && (
-              <div className="mt-8 flex justify-center gap-2">
-                <button className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 text-gray-500 disabled:opacity-50">
-                  &laquo;
-                </button>
-                <button className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold shadow-md">
-                  1
-                </button>
-                <button className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 text-gray-700 font-medium">
-                  2
-                </button>
-                <button className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 text-gray-500">
-                  &raquo;
+                  Xóa tất cả bộ lọc
                 </button>
               </div>
             )}
@@ -236,4 +213,4 @@ const CategoryPage = () => {
   );
 };
 
-export default CategoryPage;
+export default SearchPage;

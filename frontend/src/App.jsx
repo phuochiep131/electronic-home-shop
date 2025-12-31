@@ -12,6 +12,7 @@ import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
 import MyOrders from "./pages/MyOrders";
 import OrderDetail from "./pages/OrderDetail";
+import SearchPage from "./pages/SearchPage";
 
 //admin
 import AdminRoute from "./pages/admin/AdminRoute";
@@ -24,16 +25,12 @@ import OrderManager from "./pages/admin/OrderManager";
 import BannerManager from "./pages/admin/BannerManager";
 
 // --- LAYOUT COMPONENT ---
-// Layout này giúp Navbar và Footer luôn hiển thị, chỉ có phần giữa (Outlet) thay đổi
 const MainLayout = () => {
   return (
     <div className="flex flex-col min-h-screen font-sans text-gray-900">
-      {/* Navbar cố định ở trên */}
+      {/* Navbar cố định ở trên (fixed) */}
       <Navbar />
-
-      {/* Phần nội dung chính sẽ thay đổi tùy theo trang */}
-      {/* flex-grow giúp đẩy Footer xuống dưới cùng nếu nội dung trang ngắn */}
-      <main className="flex-grow bg-gray-50">
+      <main className="flex-grow bg-gray-50 pt-[100px] md:pt-[160px]">
         <Outlet />
       </main>
 
@@ -48,7 +45,7 @@ function App() {
     <Routes>
       {/* Route cha sử dụng MainLayout */}
       <Route path="/" element={<MainLayout />}>
-        {/* Route Index: Trang chủ (hiển thị khi vào đường dẫn /) */}
+        {/* Route Index: Trang chủ */}
         <Route index element={<Home />} />
 
         {/* Các Route con */}
@@ -62,9 +59,9 @@ function App() {
         <Route path="/order-success" element={<OrderSuccess />} />
         <Route path="/my-orders" element={<MyOrders />} />
         <Route path="/order/:id" element={<OrderDetail />} />
+        <Route path="/search" element={<SearchPage />} />
 
-        {/* Route động cho danh mục sản phẩm (khớp với link trong Navbar) */}
-        {/* Ví dụ: /category/tu-lanh */}
+        {/* Route động cho danh mục (đang phát triển) */}
         <Route
           path="category/:slug"
           element={
@@ -74,7 +71,7 @@ function App() {
           }
         />
 
-        {/* Route bắt lỗi 404 */}
+        {/* Route 404 */}
         <Route
           path="*"
           element={
@@ -86,10 +83,9 @@ function App() {
         />
       </Route>
 
-      {/* --- ROUTES ADMIN (Được bảo vệ) --- */}
+      {/* --- ROUTES ADMIN --- */}
       <Route path="/admin" element={<AdminRoute />}>
         <Route element={<AdminLayout />}>
-          {/* Mặc định vào /admin sẽ nhảy tới Dashboard */}
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="products" element={<ProductManager />} />

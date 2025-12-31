@@ -3,9 +3,6 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import {
   ChevronRight,
-  Star,
-  ShoppingCart,
-  Heart,
   Zap,
   Clock,
   Snowflake,
@@ -14,19 +11,19 @@ import {
   Wind,
   Smartphone,
   Monitor,
-  Speaker,
+  ChevronDown,
 } from "lucide-react";
 
-// Import Component Banner vừa tách
+// Import Components
 import Banner from "../components/Banner";
+import ProductCard from "../components/ProductCard";
 
 // --- CẤU HÌNH API ---
 const API_URL = "http://localhost:5000/api";
 
-// --- HELPER: MAP ICON VỚI TÊN DANH MỤC ---
+// --- HELPER ---
 const getCategoryStyle = (name) => {
   const lowerName = name ? name.toLowerCase() : "";
-
   if (lowerName.includes("tủ lạnh"))
     return {
       icon: <Snowflake size={24} />,
@@ -46,18 +43,11 @@ const getCategoryStyle = (name) => {
       icon: <Smartphone size={24} />,
       color: "bg-pink-100 text-pink-600",
     };
-  if (lowerName.includes("điều hòa"))
-    return {
-      icon: <Snowflake size={24} />,
-      color: "bg-cyan-100 text-cyan-600",
-    };
-  if (lowerName.includes("laptop") || lowerName.includes("máy tính"))
+  if (lowerName.includes("laptop"))
     return { icon: <Monitor size={24} />, color: "bg-gray-100 text-gray-600" };
-
   return { icon: <Zap size={24} />, color: "bg-gray-100 text-gray-600" };
 };
 
-// Helper: Format tiền tệ VNĐ
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -66,53 +56,45 @@ const formatCurrency = (amount) => {
 };
 
 const Home = () => {
-  // --- STATE QUẢN LÝ DỮ LIỆU ---
   const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]); // Sản phẩm hiển thị ở mục Gợi ý
-  const [flashSaleProducts, setFlashSaleProducts] = useState([]); // Sản phẩm có giảm giá
+  const [products, setProducts] = useState([]);
+  const [flashSaleProducts, setFlashSaleProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State countdown (Giữ nguyên giả lập cho Flash Sale)
+  // --- STATE MỚI: QUẢN LÝ SỐ LƯỢNG HIỂN THỊ ---
+  const [visibleCount, setVisibleCount] = useState(8);
+
+  // State countdown
   const [timeLeft, setTimeLeft] = useState({
     hours: 2,
     minutes: 45,
     seconds: 12,
   });
 
-  // --- CALL API ---
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Gọi song song cả 2 API để tiết kiệm thời gian
         const [categoryRes, productRes] = await Promise.all([
           axios.get(`${API_URL}/categories`),
           axios.get(`${API_URL}/products`),
         ]);
-
-        // 1. Set Danh mục
         setCategories(categoryRes.data);
-
-        // 2. Xử lý Sản phẩm
         const allProducts = productRes.data;
-
-        // Lọc sản phẩm có giảm giá > 0 để đưa vào Flash Sale
-        const saleItems = allProducts.filter(
-          (p) => p.discount && p.discount > 0
+        setProducts(allProducts);
+        // Lấy 4 sản phẩm có giảm giá
+        setFlashSaleProducts(
+          allProducts.filter((p) => p.discount && p.discount > 0).slice(0, 4)
         );
-
-        setProducts(allProducts); // Hiển thị tất cả ở mục Gợi ý
-        setFlashSaleProducts(saleItems.slice(0, 4)); // Lấy 4 sản phẩm sale đầu tiên
       } catch (error) {
         console.error("Lỗi tải dữ liệu:", error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
-  // Countdown Timer logic
+  // Countdown effect
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -127,9 +109,14 @@ const Home = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // --- HÀM XỬ LÝ XEM THÊM ---
+  const handleLoadMore = () => {
+    setVisibleCount((prev) => prev + 8);
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center space-x-2">
+      <div className="min-h-screen flex items-center justify-center space-x-2 bg-gray-50">
         <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce"></div>
         <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce delay-100"></div>
         <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce delay-200"></div>
@@ -139,10 +126,9 @@ const Home = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen pb-12 font-sans">
-      {/* --- 1. HERO SECTION (BANNER ĐỘNG) --- */}
       <Banner />
 
-      {/* --- 2. CATEGORIES (DỮ LIỆU TỪ DB) --- */}
+      {/* --- CATEGORIES --- */}
       <section className="container mx-auto px-4 py-8">
         <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
           Danh mục nổi bật
@@ -168,7 +154,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* --- 3. FLASH SALE SECTION (DỮ LIỆU TỪ DB) --- */}
+      {/* --- FLASH SALE --- */}
       {flashSaleProducts.length > 0 && (
         <section className="bg-white py-8 border-y border-gray-200 mb-8">
           <div className="container mx-auto px-4">
@@ -191,14 +177,12 @@ const Home = () => {
                 Xem tất cả <ChevronRight size={18} />
               </Link>
             </div>
-
+            {/* Grid Flash Sale */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {flashSaleProducts.map((product) => {
-                const originalPrice = product.price;
                 const currentPrice =
-                  originalPrice * (1 - product.discount / 100);
-                const soldMock = Math.floor(200) + 10;
-
+                  product.price * (1 - product.discount / 100);
+                const soldMock = Math.floor(Math.random() * 50) + 10;
                 return (
                   <Link
                     to={`/product/${product._id}`}
@@ -209,10 +193,7 @@ const Home = () => {
                       -{product.discount}%
                     </div>
                     <img
-                      src={
-                        product.image_url ||
-                        "https://placehold.co/300x300?text=No+Image"
-                      }
+                      src={product.image_url || "https://placehold.co/300x300"}
                       alt={product.product_name}
                       className="w-full h-40 object-contain mb-3 rounded"
                     />
@@ -224,14 +205,13 @@ const Home = () => {
                         {formatCurrency(currentPrice)}
                       </span>
                       <span className="text-gray-400 text-xs line-through">
-                        {formatCurrency(originalPrice)}
+                        {formatCurrency(product.price)}
                       </span>
                     </div>
-                    {/* Progress Bar Giả lập */}
                     <div className="mt-3 relative h-4 bg-gray-100 rounded-full overflow-hidden">
                       <div
                         className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full"
-                        style={{ width: `${(soldMock / 250) * 100}%` }}
+                        style={{ width: `${(soldMock / 100) * 100}%` }}
                       ></div>
                       <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white font-bold drop-shadow-md z-10">
                         Đã bán {soldMock}
@@ -245,9 +225,8 @@ const Home = () => {
         </section>
       )}
 
-      {/* --- 4. FEATURED PRODUCTS (DỮ LIỆU TỪ DB) --- */}
+      {/* --- FEATURED PRODUCTS --- */}
       <section className="container mx-auto px-4 mb-12">
-        {/* Tabs / Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 border-b border-gray-200 pb-4">
           <h3 className="text-2xl font-bold text-gray-800 uppercase border-l-4 border-blue-600 pl-3">
             Sản phẩm gợi ý
@@ -270,131 +249,24 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Product Grid */}
+        {/* --- GRID MỚI: CHỈ HIỂN THỊ SỐ LƯỢNG VISIBLECOUNT --- */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {products.map((product) => {
-            const hasDiscount = product.discount && product.discount > 0;
-            const originalPrice = product.price;
-            const currentPrice = hasDiscount
-              ? originalPrice * (1 - product.discount / 100)
-              : originalPrice;
-
-            const ratingMock = 4.5;
-            const reviewsMock = Math.floor(Math.random() * 100);
-
-            return (
-              <Link to={`/product/${product._id}`} key={product._id}>
-                <div className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col h-full">
-                  {/* Image Area */}
-                  <div className="relative p-4 bg-gray-50 h-56 flex items-center justify-center">
-                    <img
-                      src={
-                        product.image_url ||
-                        "https://placehold.co/400x400?text=Product"
-                      }
-                      alt={product.product_name}
-                      className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
-                    />
-
-                    {hasDiscount && (
-                      <span className="absolute top-2 left-2 bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">
-                        -{product.discount}%
-                      </span>
-                    )}
-
-                    {/* Hover Actions */}
-                    <div className="absolute right-2 top-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0 duration-300">
-                      <button className="bg-white p-2 rounded-full shadow hover:bg-red-50 hover:text-red-500 text-gray-400 transition-colors">
-                        <Heart size={18} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Info Area */}
-                  <div className="p-4 flex-1 flex flex-col">
-                    <h3 className="text-gray-800 font-medium text-sm md:text-base line-clamp-2 mb-2 h-10 md:h-12 leading-tight group-hover:text-blue-600 transition-colors">
-                      {product.product_name}
-                    </h3>
-
-                    <div className="flex items-center gap-1 mb-2">
-                      <div className="flex text-yellow-400 text-xs">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            size={12}
-                            fill={
-                              i < Math.floor(ratingMock)
-                                ? "currentColor"
-                                : "none"
-                            }
-                            className={
-                              i < Math.floor(ratingMock) ? "" : "text-gray-300"
-                            }
-                          />
-                        ))}
-                      </div>
-                      <span className="text-xs text-gray-400">
-                        ({reviewsMock})
-                      </span>
-                    </div>
-
-                    <div className="mt-auto">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-red-600 font-bold text-lg md:text-xl">
-                          {formatCurrency(currentPrice)}
-                        </span>
-                        {hasDiscount && (
-                          <div className="bg-red-50 text-red-600 text-xs font-bold px-1.5 py-0.5 rounded">
-                            -{product.discount}%
-                          </div>
-                        )}
-                      </div>
-                      {hasDiscount && (
-                        <div className="text-gray-400 text-xs line-through mt-0.5">
-                          {formatCurrency(originalPrice)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <button className=" m-3 left-0 right-0 bg-blue-600 text-white py-3 font-semibold flex items-center justify-center gap-2 cursor-pointer hover:shadow-xl transition-all duration-300 rounded-xl">
-                    <ShoppingCart size={18} /> Thêm vào giỏ
-                  </button>
-                </div>
-              </Link>
-            );
-          })}
+          {products.slice(0, visibleCount).map((product) => (
+            <ProductCard key={product._id} product={product} />
+          ))}
         </div>
 
-        <div className="mt-8 text-center">
-          <button className="bg-white border border-blue-600 text-blue-600 px-8 py-2.5 rounded-full font-semibold hover:bg-blue-50 transition-colors inline-flex items-center gap-2">
-            Xem thêm sản phẩm <ChevronRight size={18} />
-          </button>
-        </div>
-      </section>
-
-      {/* --- 5. BOTTOM PROMO BANNER (Giữ nguyên) --- */}
-      <section className="container mx-auto px-4 mb-8">
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 md:p-10 flex flex-col md:flex-row items-center justify-between text-white shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-blue-400 opacity-10 rounded-full blur-3xl pointer-events-none"></div>
-
-          <div className="z-10 mb-6 md:mb-0 text-center md:text-left max-w-lg">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2">
-              Đăng ký thành viên ElectroShop
-            </h2>
-            <p className="text-blue-100">
-              Nhận ngay voucher{" "}
-              <span className="font-bold text-yellow-300">200.000đ</span> cho
-              đơn hàng đầu tiên và tích điểm đổi quà.
-            </p>
-          </div>
-
-          <div className="z-10 flex gap-4">
-            <button className="bg-white text-indigo-700 px-6 py-3 rounded-full font-bold shadow hover:bg-gray-100 transition-colors">
-              Đăng ký ngay
+        {/* --- NÚT XEM THÊM --- */}
+        {visibleCount < products.length && (
+          <div className="mt-8 text-center">
+            <button
+              onClick={handleLoadMore}
+              className="bg-white border border-blue-600 text-blue-600 px-8 py-2.5 rounded-full font-semibold hover:bg-blue-50 transition-colors inline-flex items-center gap-2 cursor-pointer shadow-sm hover:shadow-md"
+            >
+              Xem thêm sản phẩm <ChevronDown size={18} />
             </button>
           </div>
-        </div>
+        )}
       </section>
     </div>
   );
