@@ -24,7 +24,7 @@ const login = async (req, res) => {
       maxAge: 3600 * 1000, // 1 giờ
     });
 
-    res.json({ message: "Đăng nhập thành công!", user });
+    res.json({ message: "Đăng nhập thành công!", user, token });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

@@ -5,9 +5,7 @@ const CartItem = require("../models/CartItem");
 const Product = require("../models/Product");
 const paymentService = require("./paymentService");
 
-// Tạo đơn hàng mới từ giỏ hàng
 async function createOrder(userId, orderData) {
-  // 2. Lấy thêm payment_method từ orderData gửi lên
   const { shipping_address, note, payment_method } = orderData;
 
   const cart = await Cart.findOne({ user_id: userId });
@@ -21,7 +19,6 @@ async function createOrder(userId, orderData) {
 
   let total_amount = 0;
 
-  // Kiểm tra tồn kho và tính tiền
   for (const item of cartItems) {
     if (item.product_id.quantity < item.quantity) {
       throw new Error(
@@ -31,25 +28,21 @@ async function createOrder(userId, orderData) {
     total_amount += item.quantity * item.price_at_time;
   }
 
-  // Tạo bản ghi Order
   const newOrder = new Order({
     user_id: userId,
     total_amount,
     shipping_address,
     note,
-    order_status: "pending", // Mặc định
+    order_status: "pending",
   });
   await newOrder.save();
 
-  // 3. TẠO THANH TOÁN (PAYMENT) NGAY LẬP TỨC
-  // paymentService.createPayment sẽ tự động update payment_id ngược lại vào newOrder
   await paymentService.createPayment({
     order_id: newOrder._id,
     amount: total_amount,
-    payment_method: payment_method || "COD", // Mặc định là COD nếu không chọn
+    payment_method: payment_method || "COD",
   });
 
-  // Tạo OrderDetail và trừ kho (giữ nguyên)
   for (const item of cartItems) {
     const orderDetail = new OrderDetail({
       order_id: newOrder._id,
@@ -65,25 +58,24 @@ async function createOrder(userId, orderData) {
     });
   }
 
-  // Xóa giỏ hàng (giữ nguyên)
   await CartItem.deleteMany({ cart_id: cart._id });
 
   return newOrder;
 }
 
-// Lấy tất cả đơn hàng của một người dùng
 async function getOrdersByUser(userId) {
-  return await Order.find({ user_id: userId }).sort({ order_date: -1 });
+  return await Order.find({ user_id: userId })
+    .populate("payment_id")
+    .sort({ order_date: -1 });
 }
 
-// 1. Lấy tất cả đơn hàng (cho trang danh sách Admin)
 async function getAllOrders() {
   return await Order.find()
-    .populate("user_id", "fullname email phone_number") // Lấy thông tin người mua
-    .sort({ order_date: -1 }); // Mới nhất lên đầu
+    .populate("user_id", "fullname email phone_number")
+    .populate("payment_id")
+    .sort({ order_date: -1 });
 }
 
-// 2. Cập nhật trạng thái đơn hàng
 async function updateOrderStatus(orderId, status) {
   const validStatuses = [
     "pending",
@@ -104,23 +96,20 @@ async function updateOrderStatus(orderId, status) {
   return order;
 }
 
-// 3. Lấy chi tiết sản phẩm của một đơn hàng (cho Modal xem chi tiết)
 async function getOrderItems(orderId) {
   return await OrderDetail.find({ order_id: orderId }).populate(
     "product_id",
     "product_name image_url"
-  ); // Lấy tên và ảnh sản phẩm
+  );
 }
 
-// Lấy chi tiết một đơn hàng cụ thể (kèm danh sách sản phẩm)
 async function getOrderById(orderId) {
-  const order = await Order.findById(orderId).populate(
-    "user_id",
-    "fullname email phone"
-  );
+  const order = await Order.findById(orderId)
+    .populate("user_id", "fullname email phone")
+    .populate("payment_id");
+
   if (!order) throw new Error("Không tìm thấy đơn hàng");
 
-  // Tìm các sản phẩm trong bảng OrderDetail
   const items = await OrderDetail.find({ order_id: orderId }).populate(
     "product_id"
   );
@@ -128,7 +117,6 @@ async function getOrderById(orderId) {
   return { order, items };
 }
 
-// [USER] Hủy đơn hàng (Chỉ cho phép khi trạng thái là pending)
 async function cancelOrder(userId, orderId) {
   const order = await Order.findOne({ _id: orderId, user_id: userId });
 
@@ -142,11 +130,9 @@ async function cancelOrder(userId, orderId) {
     throw new Error("Chỉ có thể hủy đơn hàng khi đang ở trạng thái Chờ xử lý.");
   }
 
-  // Cập nhật trạng thái
   order.order_status = "cancelled";
   await order.save();
 
-  // Hoàn lại số lượng tồn kho cho sản phẩm
   const orderDetails = await OrderDetail.find({ order_id: order._id });
   for (const item of orderDetails) {
     await Product.findByIdAndUpdate(item.product_id, {

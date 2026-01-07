@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import {
   MapPin,
-  Phone,
   CreditCard,
   Banknote,
   Loader2,
@@ -22,16 +21,14 @@ const Checkout = () => {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form state
   const [shippingInfo, setShippingInfo] = useState({
     fullname: currentUser?.fullname || "",
     phone: currentUser?.phone_number || "",
     address: currentUser?.address || "",
     note: "",
   });
-  const [paymentMethod, setPaymentMethod] = useState("COD"); // Mặc định COD
+  const [paymentMethod, setPaymentMethod] = useState("COD");
 
-  // 1. Lấy dữ liệu giỏ hàng để tính tổng tiền
   useEffect(() => {
     const fetchCart = async () => {
       try {
@@ -44,7 +41,6 @@ const Checkout = () => {
         }));
         setCartItems(items);
 
-        // Nếu giỏ hàng trống thì đá về trang chủ
         if (items.length === 0) {
           alert("Giỏ hàng trống!");
           navigate("/");
@@ -58,19 +54,15 @@ const Checkout = () => {
     fetchCart();
   }, [navigate]);
 
-  // Tính toán tiền nong
   const subtotal = cartItems.reduce((sum, item) => sum + item.total, 0);
   const shippingFee = subtotal > 5000000 ? 0 : 30000;
   const finalTotal = subtotal + shippingFee;
 
-  // Handle Input Change
   const handleInputChange = (e) => {
     setShippingInfo({ ...shippingInfo, [e.target.name]: e.target.value });
   };
 
-  // 2. Xử lý Đặt hàng
   const handlePlaceOrder = async () => {
-    // Validate cơ bản
     if (!shippingInfo.address || !shippingInfo.phone) {
       alert("Vui lòng nhập địa chỉ và số điện thoại giao hàng!");
       return;
@@ -78,11 +70,10 @@ const Checkout = () => {
 
     setIsSubmitting(true);
     try {
-      // Payload gửi xuống Backend (khớp với orderController)
       const orderData = {
         shipping_address: `${shippingInfo.fullname} - ${shippingInfo.phone} - ${shippingInfo.address}`,
         note: shippingInfo.note,
-        payment_method: paymentMethod, // Backend đã update để nhận cái này
+        payment_method: paymentMethod, 
       };
 
       const res = await axios.post(`${API_BASE}/orders/create`, orderData, {
@@ -90,20 +81,21 @@ const Checkout = () => {
       });
 
       if (res.status === 201) {
-        // Đặt hàng thành công -> Chuyển sang trang thông báo
-        // Truyền state để trang Success hiển thị thông tin
-        navigate("/order-success", {
-          state: { orderId: res.data.order._id },
-        });
+        if (res.data.paymentUrl) {
+           window.location.href = res.data.paymentUrl;
+        } else {
+           navigate("/order-success", {
+             state: { orderId: res.data.order._id },
+           });
+        }
       }
     } catch (error) {
       console.error(error);
       alert(
         "Đặt hàng thất bại: " + (error.response?.data?.error || "Lỗi hệ thống")
       );
-    } finally {
       setIsSubmitting(false);
-    }
+    } 
   };
 
   if (loading)
@@ -121,9 +113,7 @@ const Checkout = () => {
         </h1>
 
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* --- CỘT TRÁI: THÔNG TIN GIAO HÀNG --- */}
           <div className="w-full lg:w-2/3 space-y-6">
-            {/* 1. Thông tin người nhận */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <MapPin size={20} className="text-blue-600" /> Thông tin giao
@@ -180,7 +170,6 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* 2. Phương thức thanh toán */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <CreditCard size={20} className="text-blue-600" /> Phương thức
@@ -215,7 +204,7 @@ const Checkout = () => {
 
                 <label
                   className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all ${
-                    paymentMethod === "BANKING"
+                    paymentMethod === "VNPAY"
                       ? "border-blue-500 bg-blue-50"
                       : "border-gray-200"
                   }`}
@@ -223,18 +212,18 @@ const Checkout = () => {
                   <input
                     type="radio"
                     name="payment"
-                    value="BANKING"
-                    checked={paymentMethod === "BANKING"}
+                    value="VNPAY"
+                    checked={paymentMethod === "VNPAY"}
                     onChange={(e) => setPaymentMethod(e.target.value)}
                     className="w-5 h-5 text-blue-600"
                   />
                   <div className="flex-1">
                     <div className="font-medium flex items-center gap-2">
                       <CreditCard size={18} className="text-purple-600" />{" "}
-                      Chuyển khoản ngân hàng (QR Code)
+                      Thanh toán qua VNPAY
                     </div>
                     <div className="text-xs text-gray-500">
-                      Chuyển khoản qua App ngân hàng hoặc Ví điện tử.
+                      Thanh toán an toàn qua Ví điện tử hoặc Ngân hàng.
                     </div>
                   </div>
                 </label>
@@ -242,7 +231,6 @@ const Checkout = () => {
             </div>
           </div>
 
-          {/* --- CỘT PHẢI: TỔNG KẾT ĐƠN HÀNG --- */}
           <div className="w-full lg:w-1/3">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 sticky top-24">
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -250,7 +238,6 @@ const Checkout = () => {
                 {cartItems.length})
               </h2>
 
-              {/* List items nhỏ gọn */}
               <div className="max-h-60 overflow-y-auto space-y-3 mb-4 pr-1 scrollbar-thin">
                 {cartItems.map((item) => (
                   <div key={item.id} className="flex gap-3 text-sm">

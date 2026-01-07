@@ -13,6 +13,7 @@ import OrderSuccess from "./pages/OrderSuccess";
 import MyOrders from "./pages/MyOrders";
 import OrderDetail from "./pages/OrderDetail";
 import SearchPage from "./pages/SearchPage";
+import VnpayReturn from "./pages/VnpayReturn";
 
 //admin
 import AdminRoute from "./pages/admin/AdminRoute";
@@ -44,13 +45,13 @@ function App() {
   return (
     <Routes>
       {/* Route cha sử dụng MainLayout */}
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
       <Route path="/" element={<MainLayout />}>
         {/* Route Index: Trang chủ */}
         <Route index element={<Home />} />
 
         {/* Các Route con */}
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
         <Route path="cart" element={<Cart />} />
         <Route path="product/:id" element={<ProductDetail />} />
         <Route path="/profile" element={<Profile />} />
@@ -58,8 +59,10 @@ function App() {
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/order-success" element={<OrderSuccess />} />
         <Route path="/my-orders" element={<MyOrders />} />
+        <Route path="/order/vnpay_return" element={<VnpayReturn />} />
         <Route path="/order/:id" element={<OrderDetail />} />
         <Route path="/search" element={<SearchPage />} />
+        
 
         {/* Route động cho danh mục (đang phát triển) */}
         <Route
