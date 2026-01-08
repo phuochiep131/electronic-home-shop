@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios"; // Import axios
+import axios from "axios";
 import {
   Minus,
   Plus,
@@ -11,12 +11,11 @@ import {
   Tag,
   Truck,
   ShieldCheck,
-  Loader2, // Added loader
+  Loader2,
 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 
 const Cart = () => {
-  // --- STATE ---
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +23,7 @@ const Cart = () => {
   const [discount, setDiscount] = useState(0);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  const { fetchCartCount } = useCart(); // To update the navbar badge
+  const { fetchCartCount } = useCart();
 
   // --- FETCH CART DATA ---
   const fetchCart = async () => {
@@ -35,14 +34,18 @@ const Cart = () => {
       });
 
       // Transform API data to match UI needs
-      // API returns { cart: {...}, items: [ { product_id: {...}, quantity: 1, ... } ] }
       const items = res.data.items.map((item) => ({
         id: item._id, // CartItem ID
         productId: item.product_id._id,
         name: item.product_id.product_name,
-        price: item.product_id.price,
-        originalPrice:
-          item.product_id.price / (1 - (item.product_id.discount || 0) / 100), // Approximate original
+
+        // --- SỬA LỖI TẠI ĐÂY ---
+        // Giá bán (sau khi giảm) lấy từ CartItem (đã tính ở backend)
+        price: item.price_at_time,
+
+        // Giá gốc lấy từ Product (để hiển thị gạch ngang)
+        originalPrice: item.product_id.price,
+
         image:
           item.product_id.image_url ||
           "https://placehold.co/200x200/png?text=Product",
@@ -54,7 +57,6 @@ const Cart = () => {
       setCartItems(items);
     } catch (error) {
       console.error("Lỗi tải giỏ hàng:", error);
-      // Handle 401 (Unauthorized) or empty cart scenarios gracefully
     } finally {
       setLoading(false);
     }
@@ -65,6 +67,7 @@ const Cart = () => {
   }, []);
 
   // --- CALCULATIONS ---
+  // Tổng tiền tính theo giá đã giảm (price_at_time)
   const subtotal = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
@@ -91,12 +94,11 @@ const Cart = () => {
         { quantity: newQuantity },
         { withCredentials: true }
       );
-      fetchCartCount(); // Update navbar count
+      fetchCartCount();
     } catch (error) {
       console.error("Lỗi cập nhật số lượng:", error);
       alert("Lỗi cập nhật số lượng!");
-      // Revert on error could be implemented here
-      fetchCart(); // Re-fetch to ensure sync
+      fetchCart();
     }
   };
 
@@ -106,13 +108,12 @@ const Cart = () => {
       return;
 
     try {
-      // Optimistic UI update
       setCartItems((prev) => prev.filter((item) => item.id !== itemId));
 
       await axios.delete(`http://localhost:5000/api/cart/remove/${itemId}`, {
         withCredentials: true,
       });
-      fetchCartCount(); // Update navbar count
+      fetchCartCount();
     } catch (error) {
       console.error("Lỗi xóa sản phẩm:", error);
       alert("Không thể xóa sản phẩm!");
@@ -177,7 +178,6 @@ const Cart = () => {
   // --- RENDER MAIN CART ---
   return (
     <div className="min-h-screen bg-gray-50 font-sans pb-12">
-      {/* Header đơn giản */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link to="/" className="text-2xl font-bold flex items-center gap-1">
@@ -202,7 +202,6 @@ const Cart = () => {
           {/* --- LEFT COLUMN: CART ITEMS --- */}
           <div className="w-full lg:w-2/3">
             <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-              {/* Table Header */}
               <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-gray-50 text-sm font-medium text-gray-500 border-b border-gray-200">
                 <div className="col-span-6">Sản phẩm</div>
                 <div className="col-span-2 text-center">Đơn giá</div>
@@ -210,7 +209,6 @@ const Cart = () => {
                 <div className="col-span-2 text-right">Thành tiền</div>
               </div>
 
-              {/* Items List */}
               <div className="divide-y divide-gray-100">
                 {cartItems.map((item) => (
                   <div
@@ -244,7 +242,16 @@ const Cart = () => {
 
                     {/* Price */}
                     <div className="hidden md:block col-span-2 text-center text-gray-600 font-medium">
-                      {formatCurrency(item.price)}
+                      {/* Hiển thị giá đã giảm */}
+                      <span className="block text-gray-900 font-bold">
+                        {formatCurrency(item.price)}
+                      </span>
+                      {/* Hiển thị giá gốc nếu có chênh lệch */}
+                      {item.originalPrice > item.price && (
+                        <span className="text-xs text-gray-400 line-through">
+                          {formatCurrency(item.originalPrice)}
+                        </span>
+                      )}
                     </div>
 
                     {/* Quantity Control */}

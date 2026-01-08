@@ -25,8 +25,18 @@ async function createOrder(userId, orderData) {
         `Sản phẩm "${item.product_id.product_name}" không đủ số lượng tồn kho.`
       );
     }
-    total_amount += item.quantity * item.price_at_time;
+    // --- FIX 1: Đảm bảo giá luôn hợp lệ ---
+    // Nếu price_at_time lỗi thì lấy giá gốc
+    const itemPrice = item.price_at_time || item.product_id.price || 0;
+    total_amount += item.quantity * itemPrice;
   }
+
+  // --- FIX 2: Cộng phí vận chuyển (Logic giống Frontend) ---
+  const shippingFee = total_amount > 5000000 ? 0 : 30000;
+  total_amount += shippingFee;
+
+  // --- FIX 3: Làm tròn số tiền (Tránh lỗi số thập phân) ---
+  total_amount = Math.round(total_amount);
 
   const newOrder = new Order({
     user_id: userId,
@@ -44,12 +54,15 @@ async function createOrder(userId, orderData) {
   });
 
   for (const item of cartItems) {
+    // Sử dụng giá đã xử lý an toàn
+    const itemPrice = item.price_at_time || item.product_id.price || 0;
+
     const orderDetail = new OrderDetail({
       order_id: newOrder._id,
       product_id: item.product_id._id,
       quantity: item.quantity,
-      unit_price: item.price_at_time,
-      subtotal: item.quantity * item.price_at_time,
+      unit_price: itemPrice,
+      subtotal: item.quantity * itemPrice,
     });
     await orderDetail.save();
 

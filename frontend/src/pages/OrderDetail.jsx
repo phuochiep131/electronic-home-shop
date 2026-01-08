@@ -16,7 +16,7 @@ import {
 const API_BASE = "http://localhost:5000/api";
 
 const OrderDetail = () => {
-  const { id } = useParams(); // Lấy ID từ URL
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const [order, setOrder] = useState(null);
@@ -44,7 +44,7 @@ const OrderDetail = () => {
     fetchOrderDetail();
   }, [id]);
 
-  // 2. Logic Hủy Đơn (Copy từ MyOrder sang để tái sử dụng)
+  // 2. Logic Hủy Đơn
   const handleCancelOrder = async () => {
     if (!window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")) return;
 
@@ -55,7 +55,7 @@ const OrderDetail = () => {
         { withCredentials: true }
       );
       alert("Đã hủy đơn hàng thành công!");
-      // Reload lại dữ liệu sau khi hủy
+      // Reload lại dữ liệu
       setLoading(true);
       const res = await axios.get(`${API_BASE}/orders/detail/${id}`, {
         withCredentials: true,
@@ -67,7 +67,7 @@ const OrderDetail = () => {
     }
   };
 
-  // 3. Helper Functions (Format)
+  // 3. Formatters
   const formatCurrency = (amount) =>
     new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -89,6 +89,7 @@ const OrderDetail = () => {
         return "bg-yellow-100 text-yellow-700 border-yellow-200";
       case "processing":
         return "bg-blue-100 text-blue-700 border-blue-200";
+      case "shipped": // Note: Backend uses 'shipped' or 'shipping'? Standardize this.
       case "shipping":
         return "bg-purple-100 text-purple-700 border-purple-200";
       case "delivered":
@@ -105,6 +106,7 @@ const OrderDetail = () => {
       pending: "Chờ xử lý",
       processing: "Đang đóng gói",
       shipping: "Đang giao hàng",
+      shipped: "Đang giao hàng",
       delivered: "Đã giao thành công",
       cancelled: "Đã hủy",
     };
@@ -169,7 +171,6 @@ const OrderDetail = () => {
               </p>
             </div>
 
-            {/* Nút Hủy (Chỉ hiện khi Pending) */}
             {order.order_status === "pending" && (
               <button
                 onClick={handleCancelOrder}
@@ -196,7 +197,9 @@ const OrderDetail = () => {
                 <div className="flex items-start gap-3">
                   <Phone size={16} className="text-gray-400 mt-0.5" />
                   <span className="text-sm text-gray-700">
-                    {order.user_id?.phone || "Chưa cập nhật SĐT"}
+                    {order.user_id?.phone_number ||
+                      order.user_id?.phone ||
+                      "Chưa cập nhật SĐT"}
                   </span>
                 </div>
                 <div className="flex items-start gap-3">
@@ -216,13 +219,16 @@ const OrderDetail = () => {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Phương thức:</span>
                   <span className="font-medium text-gray-900">
-                    COD (Thanh toán khi nhận hàng)
+                    {/* Lấy từ DB hoặc mặc định COD */}
+                    {order.payment_id?.payment_method || "COD"}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Tình trạng:</span>
                   <span className="font-medium text-gray-900">
-                    {order.order_status === "delivered"
+                    {/* Logic hiển thị trạng thái thanh toán */}
+                    {order.order_status === "delivered" ||
+                    order.payment_id?.payment_status === "completed"
                       ? "Đã thanh toán"
                       : "Chưa thanh toán"}
                   </span>
@@ -246,7 +252,6 @@ const OrderDetail = () => {
                 key={item._id}
                 className="p-4 sm:p-6 flex items-center gap-4"
               >
-                {/* Ảnh sản phẩm (Placeholder nếu không có ảnh) */}
                 <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
                   {item.product_id?.image_url ? (
                     <img
@@ -261,7 +266,6 @@ const OrderDetail = () => {
                   )}
                 </div>
 
-                {/* Thông tin chi tiết */}
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm sm:text-base font-medium text-gray-900 truncate">
                     {item.product_id?.product_name ||
@@ -275,7 +279,6 @@ const OrderDetail = () => {
                   </p>
                 </div>
 
-                {/* Thành tiền */}
                 <div className="text-right">
                   <span className="block text-sm sm:text-base font-bold text-blue-600">
                     {formatCurrency(item.subtotal)}

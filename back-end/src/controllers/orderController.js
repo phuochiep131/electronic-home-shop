@@ -19,13 +19,13 @@ const create = async (req, res) => {
       req.connection.socket.remoteAddress;
 
     const order = await orderService.createOrder(req.user.id, req.body);
-    
+
     if (req.body.payment_method === "VNPAY") {
       const paymentUrl = createVnpayUrl(order, ipAddr);
-      return res.status(201).json({ 
-        message: "Đang chuyển hướng sang VNPAY...", 
-        order, 
-        paymentUrl 
+      return res.status(201).json({
+        message: "Đang chuyển hướng sang VNPAY...",
+        order,
+        paymentUrl,
       });
     }
 
@@ -56,20 +56,29 @@ const vnpayVerify = async (req, res) => {
       const rspCode = vnp_Params["vnp_ResponseCode"];
 
       const payment = await paymentService.getPaymentByOrderId(orderId);
-      if (!payment) return res.status(400).json({ success: false, message: "Order not found" });
+      if (!payment)
+        return res
+          .status(400)
+          .json({ success: false, message: "Order not found" });
 
       if (rspCode === "00") {
         await paymentService.updatePaymentStatus(payment._id, "completed");
-        await orderService.updateOrderStatus(orderId, "processing"); 
-        return res.status(200).json({ success: true, message: "Giao dịch thành công" });
+        await orderService.updateOrderStatus(orderId, "processing");
+        return res
+          .status(200)
+          .json({ success: true, message: "Giao dịch thành công" });
       } else {
         await paymentService.updatePaymentStatus(payment._id, "failed");
         await orderService.cancelOrder(payment.order_id, orderId); // Tự động hủy đơn hoàn kho
-        return res.status(200).json({ success: false, message: "Giao dịch thất bại" });
+        return res
+          .status(200)
+          .json({ success: false, message: "Giao dịch thất bại" });
       }
     } else {
       console.log("Chữ ký không khớp!");
-      return res.status(200).json({ success: false, message: "Invalid Signature" });
+      return res
+        .status(200)
+        .json({ success: false, message: "Invalid Signature" });
     }
   } catch (error) {
     console.error("VNPAY Verify Error:", error);
@@ -82,7 +91,11 @@ function createVnpayUrl(order, ipAddr) {
   const date = new Date();
   const createDate = moment(date).format("YYYYMMDDHHmmss");
   const orderId = order._id.toString();
-  
+
+  // --- FIX 4: Đảm bảo Amount là số nguyên ---
+  // VNPay yêu cầu số tiền nhân 100 và không có thập phân
+  const amount = Math.floor(order.total_amount * 100);
+
   let vnp_Params = {};
   vnp_Params["vnp_Version"] = "2.1.0";
   vnp_Params["vnp_Command"] = "pay";
@@ -92,7 +105,7 @@ function createVnpayUrl(order, ipAddr) {
   vnp_Params["vnp_TxnRef"] = orderId;
   vnp_Params["vnp_OrderInfo"] = "Thanh toan don hang " + orderId;
   vnp_Params["vnp_OrderType"] = "other";
-  vnp_Params["vnp_Amount"] = order.total_amount * 100;
+  vnp_Params["vnp_Amount"] = amount; // Sử dụng biến amount đã xử lý
   vnp_Params["vnp_ReturnUrl"] = vnp_ReturnUrl;
   vnp_Params["vnp_IpAddr"] = ipAddr;
   vnp_Params["vnp_CreateDate"] = createDate;
@@ -102,9 +115,9 @@ function createVnpayUrl(order, ipAddr) {
   const signData = querystring.stringify(vnp_Params, { encode: false });
   const hmac = crypto.createHmac("sha512", vnp_HashSecret);
   const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
-  
+
   vnp_Params["vnp_SecureHash"] = signed;
-  
+
   return vnp_Url + "?" + querystring.stringify(vnp_Params, { encode: false });
 }
 
