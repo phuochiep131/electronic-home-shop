@@ -4,6 +4,7 @@ const Cart = require("../models/Cart");
 const CartItem = require("../models/CartItem");
 const Product = require("../models/Product");
 const paymentService = require("./paymentService");
+const FlashSale = require("../models/FlashSale");
 
 async function createOrder(userId, orderData) {
   const { shipping_address, note, payment_method } = orderData;
@@ -69,6 +70,23 @@ async function createOrder(userId, orderData) {
     await Product.findByIdAndUpdate(item.product_id._id, {
       $inc: { quantity: -item.quantity },
     });
+    
+    const now = new Date();
+    
+    // Tìm xem sản phẩm này có đang chạy Flash Sale không
+    const activeFlashSale = await FlashSale.findOne({
+        product_id: item.product_id._id,
+        status: true,
+        start_date: { $lte: now }, // Đã bắt đầu
+        end_date: { $gte: now }    // Chưa kết thúc
+    });
+
+    // Nếu có, cộng số lượng khách mua vào biến 'sold'
+    if (activeFlashSale) {
+        await FlashSale.findByIdAndUpdate(activeFlashSale._id, {
+            $inc: { sold: item.quantity }
+        });
+    }
   }
 
   await CartItem.deleteMany({ cart_id: cart._id });

@@ -24,6 +24,7 @@ import UserManager from "./pages/admin/UserManager";
 import CategoryManager from "./pages/admin/CategoryManager";
 import OrderManager from "./pages/admin/OrderManager";
 import BannerManager from "./pages/admin/BannerManager";
+import FlashSaleManager from "./pages/admin/FlashSaleManager";
 
 // --- LAYOUT COMPONENT ---
 const MainLayout = () => {
@@ -96,6 +97,7 @@ function App() {
           <Route path="categories" element={<CategoryManager />} />
           <Route path="orders" element={<OrderManager />} />
           <Route path="banners" element={<BannerManager />} />
+          <Route path="flash-sales" element={<FlashSaleManager />} />
         </Route>
       </Route>
     </Routes>

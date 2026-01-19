@@ -13,6 +13,7 @@ import {
   Bell,
   ChevronDown,
   FolderTree, // Icon cho danh mục
+  Zap,
 } from "lucide-react";
 
 const AdminLayout = () => {
@@ -64,6 +65,11 @@ const AdminLayout = () => {
       path: "/admin/banners",
       name: "Banner",
       icon: <Users size={20} />,
+    },
+    {
+      path: "/admin/flash-sales",
+      name: "Flash Sale",
+      icon: <Zap size={20} />,
     },
   ];
 
