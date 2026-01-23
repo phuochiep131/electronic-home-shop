@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom"; // Added useNavigate
+import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   Star,
@@ -13,18 +13,18 @@ import {
   Plus,
   ShoppingCart,
   Share2,
+  Zap,
+  Clock,
 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 
-// Cấu hình API URL
 const API_URL = "http://localhost:5000/api";
 
 const ProductDetail = () => {
   const { id } = useParams();
-  const navigate = useNavigate(); // Initialize navigate
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("description");
 
-  // State dữ liệu
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,25 +32,7 @@ const ProductDetail = () => {
 
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
-  const [addingToCart, setAddingToCart] = useState(false); // Loading state for button
-
-  const handleBuyNow = async () => {
-    setAddingToCart(true);
-    // Gọi hàm từ Context
-    const success = await addToCart(product._id, quantity);
-    setAddingToCart(false);
-
-    if (success) {
-      // Có thể chuyển hướng đến trang giỏ hàng luôn nếu muốn
-      navigate("/cart");
-    }
-  };
-
-  const handleAddToCart = async () => {
-    setAddingToCart(true);
-    await addToCart(product._id, quantity);
-    setAddingToCart(false);
-  };
+  const [addingToCart, setAddingToCart] = useState(false);
 
   // Format tiền tệ
   const formatCurrency = (amount) => {
@@ -60,28 +42,23 @@ const ProductDetail = () => {
     }).format(amount);
   };
 
-  // Gọi API lấy chi tiết sản phẩm
   useEffect(() => {
     const fetchProductData = async () => {
       try {
         setLoading(true);
-        // 1. Lấy chi tiết sản phẩm
         const res = await axios.get(`${API_URL}/products/${id}`);
         const data = res.data;
         setProduct(data);
 
-        // Set ảnh mặc định (fallback nếu không có ảnh)
         const img =
           data.image_url || "https://placehold.co/600x600/png?text=No+Image";
         setMainImage(img);
 
-        // 2. Lấy sản phẩm tương tự (cùng danh mục)
         if (data.category_id && data.category_id._id) {
           const catId = data.category_id._id;
           const relatedRes = await axios.get(
             `${API_URL}/products?category=${catId}`
           );
-          // Lọc bỏ sản phẩm hiện tại & lấy 4 sản phẩm khác
           const related = relatedRes.data
             .filter((p) => p._id !== id)
             .slice(0, 4);
@@ -96,10 +73,25 @@ const ProductDetail = () => {
 
     if (id) {
       fetchProductData();
-      window.scrollTo(0, 0); // Cuộn lên đầu trang khi chuyển sản phẩm
-      setQuantity(1); // Reset số lượng
+      window.scrollTo(0, 0);
+      setQuantity(1);
     }
   }, [id]);
+
+  const handleBuyNow = async () => {
+    setAddingToCart(true);
+    const success = await addToCart(product._id, quantity);
+    setAddingToCart(false);
+    if (success) {
+      navigate("/cart");
+    }
+  };
+
+  const handleAddToCart = async () => {
+    setAddingToCart(true);
+    await addToCart(product._id, quantity);
+    setAddingToCart(false);
+  };
 
   if (loading) {
     return (
@@ -119,30 +111,49 @@ const ProductDetail = () => {
     );
   }
 
-  // --- XỬ LÝ DỮ LIỆU HIỂN THỊ ---
+  // --- LOGIC GIÁ & FLASH SALE ---
   const originalPrice = product.price;
-  const discount = product.discount || 0;
-  const currentPrice = originalPrice * (1 - discount / 100);
-  const ratingMock = 4.8; // DB chưa có rating, giả lập
-  const reviewsMock = 128; // DB chưa có reviews, giả lập
+  const now = new Date();
+  const flashSale = product.flash_sale;
 
-  // Tạo danh sách ảnh giả lập (Vì DB chỉ có 1 ảnh, ta nhân bản lên để demo Gallery)
+  const isFlashSaleActive =
+    flashSale &&
+    flashSale.status &&
+    new Date(flashSale.start_date) <= now &&
+    new Date(flashSale.end_date) >= now;
+
+  let currentPrice, discountPercent;
+
+  if (isFlashSaleActive) {
+    if (flashSale.sale_price) {
+        currentPrice = flashSale.sale_price;
+    } else {
+        currentPrice = originalPrice * (1 - flashSale.discount_percent / 100);
+    }
+    discountPercent = flashSale.discount_percent;
+  } else {
+    discountPercent = product.discount || 0;
+    currentPrice = originalPrice * (1 - discountPercent / 100);
+  }
+
+  const ratingMock = 4.8;
+  const reviewsMock = 128;
+
   const galleryImages = [
     product.image_url,
     product.image_url,
     product.image_url,
     product.image_url,
-  ].filter(Boolean); // Lọc bỏ giá trị null/undefined
+  ].filter(Boolean);
 
-  // Tạo danh sách thông số kỹ thuật từ các trường có trong DB
   const specsList = [
-    { label: "Danh mục", value: product.category_id?.name }, // Changed category_name to name based on your schema updates
+    { label: "Danh mục", value: product.category_id?.name },
     { label: "Kích thước / Dung tích", value: product.size },
     { label: "Màu sắc", value: product.color },
     { label: "Chất liệu", value: product.material },
     { label: "Bảo hành", value: product.warranty },
     { label: "Xuất xứ", value: product.origin },
-  ].filter((item) => item.value); // Chỉ hiện thị các trường có dữ liệu
+  ].filter((item) => item.value);
 
   return (
     <div className="bg-gray-50 min-h-screen py-8 font-sans">
@@ -164,9 +175,8 @@ const ProductDetail = () => {
 
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 md:p-8">
-            {/* --- LEFT SIDE: IMAGES GALLERY --- */}
+            {/* --- LEFT SIDE: IMAGES --- */}
             <div className="space-y-4">
-              {/* Main Image */}
               <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden border border-gray-200 relative group">
                 <img
                   src={
@@ -176,17 +186,23 @@ const ProductDetail = () => {
                   alt={product.product_name}
                   className="w-full h-full object-contain p-4 transition-transform duration-300 group-hover:scale-105"
                 />
-                {discount > 0 && (
-                  <div className="absolute top-4 left-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
-                    -{discount}%
+                
+                {/* Badge giảm giá */}
+                {discountPercent > 0 && (
+                  <div
+                    className={`absolute top-4 left-4 text-white text-xs font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1
+                    ${isFlashSaleActive ? "bg-orange-600" : "bg-red-500"}`}
+                  >
+                    {isFlashSaleActive && <Zap size={12} fill="white" />}
+                    -{discountPercent}%
                   </div>
                 )}
+                
                 <button className="absolute top-4 right-4 p-2 bg-white/80 rounded-full text-gray-500 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Share2 size={20} />
                 </button>
               </div>
 
-              {/* Thumbnails */}
               <div className="grid grid-cols-4 gap-4">
                 {galleryImages.map((img, idx) => (
                   <div
@@ -208,7 +224,7 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* --- RIGHT SIDE: PRODUCT INFO --- */}
+            {/* --- RIGHT SIDE: INFO --- */}
             <div>
               <div className="flex justify-between items-start mb-4">
                 <div>
@@ -248,21 +264,52 @@ const ProductDetail = () => {
                 </button>
               </div>
 
-              <div className="bg-blue-50/50 p-4 rounded-xl mb-6 border border-blue-100">
+              {/* --- PRICE BOX (LOGIC THAY ĐỔI GIAO DIỆN) --- */}
+              <div
+                className={`p-4 rounded-xl mb-6 border ${
+                  isFlashSaleActive
+                    ? "bg-gradient-to-r from-orange-50 to-red-50 border-orange-200"
+                    : "bg-blue-50/50 border-blue-100"
+                }`}
+              >
+                {/* Header Flash Sale */}
+                {isFlashSaleActive && (
+                  <div className="flex items-center gap-2 mb-2 text-orange-600 font-bold uppercase text-sm">
+                    <Zap size={18} fill="currentColor" />
+                    <span>Flash Sale đang diễn ra</span>
+                    <span className="ml-auto flex items-center gap-1 text-gray-500 font-normal normal-case text-xs">
+                       <Clock size={14} /> Kết thúc: {new Date(flashSale.end_date).toLocaleDateString('vi-VN')}
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex items-end gap-3 mb-1">
-                  <span className="text-3xl font-bold text-blue-600">
+                  <span
+                    className={`text-3xl font-bold ${
+                      isFlashSaleActive ? "text-red-600" : "text-blue-600"
+                    }`}
+                  >
                     {formatCurrency(currentPrice)}
                   </span>
-                  {discount > 0 && (
+                  {discountPercent > 0 && (
                     <span className="text-gray-400 line-through text-lg mb-1">
                       {formatCurrency(originalPrice)}
                     </span>
                   )}
                 </div>
-                {discount > 0 && (
-                  <div className="text-sm text-blue-800 flex items-center gap-1 font-medium">
-                    <Tag size={14} /> Tiết kiệm:{" "}
-                    {formatCurrency(originalPrice - currentPrice)}
+
+                {discountPercent > 0 && (
+                  <div className="flex items-center justify-between">
+                     <div className={`text-sm flex items-center gap-1 font-medium ${isFlashSaleActive ? "text-red-700" : "text-blue-800"}`}>
+                        <Tag size={14} /> Tiết kiệm:{" "}
+                        {formatCurrency(originalPrice - currentPrice)}
+                     </div>
+                     {/* Thanh tiến độ sold flash sale */}
+                     {isFlashSaleActive && (
+                        <div className="text-xs text-gray-500 font-medium">
+                           Đã bán: <span className="text-orange-600">{flashSale.sold}</span> / {flashSale.quantity}
+                        </div>
+                     )}
                   </div>
                 )}
               </div>
@@ -342,7 +389,7 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* --- TABS: DESCRIPTION & SPECS --- */}
+          {/* --- TABS --- */}
           <div className="border-t border-gray-200">
             <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar">
               <button
@@ -482,10 +529,19 @@ const ProductDetail = () => {
           {relatedProducts.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {relatedProducts.map((item) => {
-                const itemOriginalPrice = item.price;
-                const itemDiscount = item.discount || 0;
-                const itemCurrentPrice =
-                  itemOriginalPrice * (1 - itemDiscount / 100);
+                 // Logic check flash sale cho related products (nếu API trả về)
+                 const itemFlashSale = item.flash_sale;
+                 const isItemFlashSale = itemFlashSale && itemFlashSale.status && new Date(itemFlashSale.end_date) > new Date();
+                 const itemOriginalPrice = item.price;
+                 let itemCurrentPrice, itemDiscount;
+                 
+                 if(isItemFlashSale) {
+                    itemCurrentPrice = itemFlashSale.sale_price;
+                    itemDiscount = itemFlashSale.discount_percent;
+                 } else {
+                    itemDiscount = item.discount || 0;
+                    itemCurrentPrice = itemOriginalPrice * (1 - itemDiscount / 100);
+                 }
 
                 return (
                   <Link
@@ -503,8 +559,8 @@ const ProductDetail = () => {
                         className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
                       />
                       {itemDiscount > 0 && (
-                        <span className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">
-                          -{itemDiscount}%
+                        <span className={`absolute top-2 left-2 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm ${isItemFlashSale ? 'bg-orange-600' : 'bg-red-500'}`}>
+                          {isItemFlashSale && <Zap size={8} className="inline mr-1 fill-white"/>}-{itemDiscount}%
                         </span>
                       )}
                     </div>
@@ -516,7 +572,7 @@ const ProductDetail = () => {
                     </h3>
                     <div className="flex items-center justify-between mt-auto">
                       <div className="flex flex-col">
-                        <span className="text-blue-600 font-bold text-sm">
+                        <span className={`font-bold text-sm ${isItemFlashSale ? 'text-red-600' : 'text-blue-600'}`}>
                           {formatCurrency(itemCurrentPrice)}
                         </span>
                         {itemDiscount > 0 && (
