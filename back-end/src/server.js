@@ -15,6 +15,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const shippingRoutes = require("./routes/shippingRoutes");
 const bannerRoutes = require("./routes/bannerRoutes");
 const flashSaleRoutes = require("./routes/flashSaleRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/shipping", shippingRoutes);
 app.use("/api/banners", bannerRoutes);
 app.use('/api/flash-sale', flashSaleRoutes)
+app.use("/api/chat", chatRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>

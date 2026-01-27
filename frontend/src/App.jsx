@@ -14,6 +14,7 @@ import MyOrders from "./pages/MyOrders";
 import OrderDetail from "./pages/OrderDetail";
 import SearchPage from "./pages/SearchPage";
 import VnpayReturn from "./pages/VnpayReturn";
+import Chatbot from "./components/Chatbot";
 
 //admin
 import AdminRoute from "./pages/admin/AdminRoute";
@@ -35,7 +36,7 @@ const MainLayout = () => {
       <main className="flex-grow bg-gray-50 pt-[100px] md:pt-[160px]">
         <Outlet />
       </main>
-
+      <Chatbot />
       {/* Footer cố định ở dưới */}
       <Footer />
     </div>
