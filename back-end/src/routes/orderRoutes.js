@@ -15,5 +15,6 @@ router.put("/cancel/:id", orderController.cancelOrder);
 router.get("/admin/all", isAdmin, orderController.getAll);
 router.put("/admin/status/:id", isAdmin, orderController.updateStatus);
 router.get("/admin/:id/items", isAdmin, orderController.getOrderDetails);
+router.put('/admin/payment-status/:id', orderController.updateOrderPaymentStatus);
 
 module.exports = router;

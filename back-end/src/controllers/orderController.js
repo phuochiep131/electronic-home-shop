@@ -196,6 +196,34 @@ const cancelOrder = async (req, res) => {
   }
 };
 
+const updateOrderPaymentStatus = async (req, res) => {
+    try {
+        const orderId = req.params.id;
+        const { payment_status } = req.body; // 'completed', 'failed', 'pending'
+
+        if (!payment_status) {
+            return res.status(400).json({ message: "Thiếu trạng thái thanh toán" });
+        }
+
+        // Gọi Service mới thêm
+        const updatedPayment = await paymentService.updatePaymentStatusByOrderId(orderId, payment_status);
+
+        res.status(200).json({
+            success: true,
+            message: "Cập nhật trạng thái thanh toán thành công",
+            data: updatedPayment
+        });
+
+    } catch (error) {
+        // Xử lý trường hợp chưa có Payment record -> Tự động tạo 'completed' (Opsional - tuỳ chọn nâng cao)
+        if (error.message.includes('chưa có bản ghi thanh toán')) {
+             // Logic tự tạo payment nếu muốn...
+             return res.status(404).json({ message: error.message });
+        }
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
   create,
   vnpayVerify,
@@ -205,4 +233,5 @@ module.exports = {
   getOrderDetails,
   getOrderDetail,
   cancelOrder,
+  updateOrderPaymentStatus,
 };
