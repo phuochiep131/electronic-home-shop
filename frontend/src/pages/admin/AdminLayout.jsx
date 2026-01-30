@@ -14,6 +14,7 @@ import {
   ChevronDown,
   FolderTree, // Icon cho danh mục
   Zap,
+  MessageSquare,
 } from "lucide-react";
 
 const AdminLayout = () => {
@@ -70,6 +71,11 @@ const AdminLayout = () => {
       path: "/admin/flash-sales",
       name: "Flash Sale",
       icon: <Zap size={20} />,
+    },
+    {
+      path: "/admin/reviews",
+      name: "Đánh giá",
+      icon: <MessageSquare size={20} />,
     },
   ];
 

@@ -1,13 +1,13 @@
-require('dotenv').config();
+require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
 const connect = require("./config/db");
-const cookieParser = require('cookie-parser');
+const cookieParser = require("cookie-parser");
 
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
-const categoryRoutes = require("./routes/categoryRoutes"); 
+const categoryRoutes = require("./routes/categoryRoutes");
 const productRoutes = require("./routes/productRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
@@ -17,6 +17,7 @@ const bannerRoutes = require("./routes/bannerRoutes");
 const flashSaleRoutes = require("./routes/flashSaleRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
 
 const app = express();
 
@@ -26,7 +27,7 @@ app.use(
   cors({
     origin: "http://localhost:5173",
     credentials: true,
-  })
+  }),
 );
 
 connect();
@@ -40,11 +41,12 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/shipping", shippingRoutes);
 app.use("/api/banners", bannerRoutes);
-app.use('/api/flash-sale', flashSaleRoutes)
+app.use("/api/flash-sale", flashSaleRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
-  console.log(`Server đang chạy tại http://localhost:${PORT}`)
+  console.log(`Server đang chạy tại http://localhost:${PORT}`),
 );

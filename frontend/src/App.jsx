@@ -26,6 +26,7 @@ import CategoryManager from "./pages/admin/CategoryManager";
 import OrderManager from "./pages/admin/OrderManager";
 import BannerManager from "./pages/admin/BannerManager";
 import FlashSaleManager from "./pages/admin/FlashSaleManager";
+import ReviewManager from "./pages/admin/ReviewManager";
 
 // --- LAYOUT COMPONENT ---
 const MainLayout = () => {
@@ -47,8 +48,8 @@ function App() {
   return (
     <Routes>
       {/* Route cha sử dụng MainLayout */}
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
+      <Route path="login" element={<Login />} />
+      <Route path="register" element={<Register />} />
       <Route path="/" element={<MainLayout />}>
         {/* Route Index: Trang chủ */}
         <Route index element={<Home />} />
@@ -64,7 +65,6 @@ function App() {
         <Route path="/order/vnpay_return" element={<VnpayReturn />} />
         <Route path="/order/:id" element={<OrderDetail />} />
         <Route path="/search" element={<SearchPage />} />
-        
 
         {/* Route động cho danh mục (đang phát triển) */}
         <Route
@@ -99,6 +99,7 @@ function App() {
           <Route path="orders" element={<OrderManager />} />
           <Route path="banners" element={<BannerManager />} />
           <Route path="flash-sales" element={<FlashSaleManager />} />
+          <Route path="reviews" element={<ReviewManager />} />
         </Route>
       </Route>
     </Routes>

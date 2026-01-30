@@ -5,6 +5,7 @@ const CartItem = require("../models/CartItem");
 const Product = require("../models/Product");
 const paymentService = require("./paymentService");
 const FlashSale = require("../models/FlashSale");
+const Review = require("../models/Review");
 
 async function createOrder(userId, orderData) {
   const { shipping_address, note, payment_method } = orderData;
@@ -13,7 +14,7 @@ async function createOrder(userId, orderData) {
   if (!cart) throw new Error("Không tìm thấy giỏ hàng");
 
   const cartItems = await CartItem.find({ cart_id: cart._id }).populate(
-    "product_id"
+    "product_id",
   );
   if (cartItems.length === 0)
     throw new Error("Giỏ hàng trống, không thể đặt hàng");
@@ -23,7 +24,7 @@ async function createOrder(userId, orderData) {
   for (const item of cartItems) {
     if (item.product_id.quantity < item.quantity) {
       throw new Error(
-        `Sản phẩm "${item.product_id.product_name}" không đủ số lượng tồn kho.`
+        `Sản phẩm "${item.product_id.product_name}" không đủ số lượng tồn kho.`,
       );
     }
     // --- FIX 1: Đảm bảo giá luôn hợp lệ ---
@@ -70,22 +71,22 @@ async function createOrder(userId, orderData) {
     await Product.findByIdAndUpdate(item.product_id._id, {
       $inc: { quantity: -item.quantity },
     });
-    
+
     const now = new Date();
-    
+
     // Tìm xem sản phẩm này có đang chạy Flash Sale không
     const activeFlashSale = await FlashSale.findOne({
-        product_id: item.product_id._id,
-        status: true,
-        start_date: { $lte: now }, // Đã bắt đầu
-        end_date: { $gte: now }    // Chưa kết thúc
+      product_id: item.product_id._id,
+      status: true,
+      start_date: { $lte: now }, // Đã bắt đầu
+      end_date: { $gte: now }, // Chưa kết thúc
     });
 
     // Nếu có, cộng số lượng khách mua vào biến 'sold'
     if (activeFlashSale) {
-        await FlashSale.findByIdAndUpdate(activeFlashSale._id, {
-            $inc: { sold: item.quantity }
-        });
+      await FlashSale.findByIdAndUpdate(activeFlashSale._id, {
+        $inc: { sold: item.quantity },
+      });
     }
   }
 
@@ -121,7 +122,7 @@ async function updateOrderStatus(orderId, status) {
   const order = await Order.findByIdAndUpdate(
     orderId,
     { order_status: status },
-    { new: true }
+    { new: true },
   );
   if (!order) throw new Error("Không tìm thấy đơn hàng");
   return order;
@@ -130,22 +131,58 @@ async function updateOrderStatus(orderId, status) {
 async function getOrderItems(orderId) {
   return await OrderDetail.find({ order_id: orderId }).populate(
     "product_id",
-    "product_name image_url"
+    "product_name image_url",
   );
 }
 
 async function getOrderById(orderId) {
+  // 1. Lấy đơn hàng
   const order = await Order.findById(orderId)
     .populate("user_id", "fullname email phone")
     .populate("payment_id");
 
-  if (!order) throw new Error("Không tìm thấy đơn hàng");
+  if (!order) throw new Error("Không tìm thấy đơn hàng trong hệ thống");
 
+  // 2. Lấy chi tiết sản phẩm
   const items = await OrderDetail.find({ order_id: orderId }).populate(
-    "product_id"
+    "product_id",
   );
 
-  return { order, items };
+  // 3. Logic kiểm tra Review (Đã thêm Try-Catch an toàn)
+  const itemsWithReviewStatus = await Promise.all(
+    items.map(async (item) => {
+      // Chuyển mongoose doc sang object thường
+      let itemObj = item.toObject ? item.toObject() : item;
+
+      // Mặc định là chưa review
+      itemObj.is_reviewed = false;
+
+      try {
+        // Chỉ check review nếu User và Product đều tồn tại
+        // order.user_id có thể là null nếu user bị xóa
+        // item.product_id có thể là null nếu product bị xóa
+        if (
+          order.user_id &&
+          order.user_id._id &&
+          item.product_id &&
+          item.product_id._id
+        ) {
+          const reviewExists = await Review.exists({
+            user_id: order.user_id._id,
+            product_id: item.product_id._id,
+          });
+          itemObj.is_reviewed = !!reviewExists;
+        }
+      } catch (e) {
+        console.error("Lỗi check review (bỏ qua):", e.message);
+        // Gặp lỗi thì bỏ qua, vẫn trả về item để không lỗi trang chi tiết
+      }
+
+      return itemObj;
+    }),
+  );
+
+  return { order, items: itemsWithReviewStatus };
 }
 
 async function cancelOrder(userId, orderId) {
@@ -153,7 +190,7 @@ async function cancelOrder(userId, orderId) {
 
   if (!order) {
     throw new Error(
-      "Không tìm thấy đơn hàng hoặc bạn không có quyền hủy đơn này."
+      "Không tìm thấy đơn hàng hoặc bạn không có quyền hủy đơn này.",
     );
   }
 

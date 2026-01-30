@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, Eye, ShoppingCart, Star, Check, Zap } from "lucide-react"; // Import thêm icon Zap
+import { Heart, Eye, ShoppingCart, Star, Check, Zap } from "lucide-react";
 import { useCart } from "../context/CartContext";
 
 const formatCurrency = (amount) => {
@@ -16,7 +16,6 @@ const ProductCard = ({ product }) => {
   const [isAdded, setIsAdded] = useState(false);
 
   // --- XỬ LÝ LOGIC FLASH SALE ---
-  // Kiểm tra xem có flash sale hợp lệ không (có data, status true, còn thời gian)
   const now = new Date();
   const flashSale = product.flash_sale;
   const isFlashSaleActive =
@@ -31,16 +30,13 @@ const ProductCard = ({ product }) => {
   originalPrice = product.price;
 
   if (isFlashSaleActive) {
-    // Ưu tiên giá Flash Sale
     if (flashSale.sale_price) {
-        currentPrice = flashSale.sale_price;
+      currentPrice = flashSale.sale_price;
     } else {
-        currentPrice = originalPrice * (1 - flashSale.discount_percent / 100);
+      currentPrice = originalPrice * (1 - flashSale.discount_percent / 100);
     }
-    
     discountPercent = flashSale.discount_percent;
   } else {
-    // Logic giảm giá thường
     discountPercent = product.discount || 0;
     currentPrice = originalPrice * (1 - discountPercent / 100);
   }
@@ -50,16 +46,17 @@ const ProductCard = ({ product }) => {
     ? Math.min((flashSale.sold / flashSale.quantity) * 100, 100)
     : 0;
 
-  // Mock rating
-  const ratingMock = product.rating || 4.5;
-  const reviewsMock = product.reviews || Math.floor(Math.random() * 50) + 10;
+  // --- SỬA Ở ĐÂY: DÙNG DỮ LIỆU THẬT TỪ DB ---
+  // Backend trả về: average_rating (vd: 4.5) và review_count (vd: 10)
+  const ratingReal = product.average_rating || 0;
+  const reviewsCount = product.review_count || 0;
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (isAdding) return;
     setIsAdding(true);
-    // Nếu là flash sale, backend sẽ tự xử lý giá dựa vào thời điểm add
+
     const success = await addToCart(product._id, 1);
     setIsAdding(false);
     if (success) {
@@ -96,7 +93,6 @@ const ProductCard = ({ product }) => {
           />
         </Link>
 
-        {/* Buttons hover */}
         <div className="absolute right-3 top-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0 z-20">
           <button className="bg-white p-2 rounded-full shadow-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
             <Heart size={18} />
@@ -109,24 +105,26 @@ const ProductCard = ({ product }) => {
 
       {/* --- Content Area --- */}
       <div className="p-4 flex-1 flex flex-col">
-        {/* Rating */}
+        {/* Rating: Hiển thị sao thật */}
         <div className="flex items-center gap-1 mb-2">
           <div className="flex text-yellow-400">
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
                 size={12}
-                fill={i < Math.floor(ratingMock) ? "currentColor" : "none"}
-                className={i < Math.floor(ratingMock) ? "" : "text-gray-300"}
+                // Logic tô màu sao dựa trên ratingReal
+                fill={i < Math.round(ratingReal) ? "currentColor" : "none"}
+                className={i >= Math.round(ratingReal) ? "text-gray-300" : ""}
               />
             ))}
           </div>
-          <span className="text-xs text-gray-400 ml-1">({reviewsMock})</span>
+          {/* Hiển thị số lượng đánh giá thật */}
+          <span className="text-xs text-gray-400 ml-1">({reviewsCount})</span>
         </div>
 
         {/* Name */}
         <Link to={`/product/${product._id}`}>
-          <h3 className="text-gray-800 font-medium text-sm md:text-base line-clamp-2 mb-0 h-10 md:h-0 leading-tight group-hover:text-blue-600 transition-colors">
+          <h3 className="text-gray-800 font-medium text-sm md:text-base line-clamp-2 mb-2 h-10 md:h-12 leading-tight group-hover:text-blue-600 transition-colors">
             {product.product_name}
           </h3>
         </Link>
@@ -155,9 +153,8 @@ const ProductCard = ({ product }) => {
                 <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center text-[10px] text-white font-bold uppercase drop-shadow-md">
                   Đã bán {flashSale.sold}
                 </div>
-                {/* Hình ảnh lửa nhỏ trang trí (optional) */}
                 <div className="absolute top-0 left-1 h-full flex items-center">
-                   <Zap size={10} className="text-white fill-white"/>
+                  <Zap size={10} className="text-white fill-white" />
                 </div>
               </div>
             )}
