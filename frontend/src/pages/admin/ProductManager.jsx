@@ -15,8 +15,9 @@ import {
 } from "lucide-react";
 
 // --- CẤU HÌNH ---
-const API_URL = "http://localhost:5000/api/products";
-const CATEGORY_API_URL = "http://localhost:5000/api/categories";
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
+const CATEGORY_API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
+
 const CLOUD_NAME = "detransaw";
 const UPLOAD_PRESET = "web_upload";
 
@@ -58,8 +59,8 @@ const ProductManager = () => {
     setLoading(true);
     try {
       const [resProducts, resCategories] = await Promise.all([
-        fetch(API_URL, { credentials: "include" }),
-        fetch(CATEGORY_API_URL, { credentials: "include" }),
+        fetch(`${API_URL}/products`, { credentials: "include" }),
+        fetch(`${CATEGORY_API_URL}/categories`, { credentials: "include" }),
       ]);
 
       const dataProducts = await resProducts.json();
@@ -176,7 +177,7 @@ const ProductManager = () => {
       const payload = { ...formData, image_url: finalImageUrl };
 
       const method = editingId ? "PUT" : "POST";
-      const url = editingId ? `${API_URL}/${editingId}` : API_URL;
+      const url = editingId ? `${API_URL}/products/${editingId}` : `${API_URL}/products`;
 
       const res = await fetch(url, {
         method: method,
@@ -203,7 +204,7 @@ const ProductManager = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
       try {
-        const res = await fetch(`${API_URL}/${id}`, {
+        const res = await fetch(`${API_URL}/products/${id}`, {
           method: "DELETE",
           credentials: "include",
         });

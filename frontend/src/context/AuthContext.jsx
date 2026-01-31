@@ -9,6 +9,8 @@ const initialState = {
   loading: true,
 };
 
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
+
 const authReducer = (state, action) => {
   switch (action.type) {
     case "AUTH_SUCCESS": {
@@ -38,7 +40,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkLoggedIn = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/auth/me", {
+        const response = await axios.get(`${API_URL}/auth/me`, {
           withCredentials: true,
         });
 

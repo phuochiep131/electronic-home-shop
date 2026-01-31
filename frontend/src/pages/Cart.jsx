@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
+
 const Cart = () => {
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
@@ -29,7 +31,7 @@ const Cart = () => {
   const fetchCart = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:5000/api/cart", {
+      const res = await axios.get(`${API_URL}/cart`, {
         withCredentials: true,
       });
 
@@ -90,7 +92,7 @@ const Cart = () => {
 
     try {
       await axios.put(
-        `http://localhost:5000/api/cart/update/${itemId}`,
+        `${API_URL}/cart/update/${itemId}`,
         { quantity: newQuantity },
         { withCredentials: true }
       );
@@ -110,7 +112,7 @@ const Cart = () => {
     try {
       setCartItems((prev) => prev.filter((item) => item.id !== itemId));
 
-      await axios.delete(`http://localhost:5000/api/cart/remove/${itemId}`, {
+      await axios.delete(`${API_URL}/cart/remove/${itemId}`, {
         withCredentials: true,
       });
       fetchCartCount();

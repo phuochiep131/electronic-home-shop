@@ -15,8 +15,8 @@ import {
   UploadCloud,
 } from "lucide-react";
 
-// --- CẤU HÌNH API ---
-const API_URL = "http://localhost:5000/api/categories";
+
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
 
 // --- CẤU HÌNH CLOUDINARY ---
 const CLOUD_NAME = "detransaw";
@@ -50,7 +50,7 @@ const CategoryManager = () => {
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const res = await fetch(API_URL, { credentials: "include" });
+      const res = await fetch(`${API_URL}/categories`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) {
         setCategories(Array.isArray(data) ? data : []);
@@ -160,7 +160,7 @@ const CategoryManager = () => {
       };
 
       const method = editingId ? "PUT" : "POST";
-      const url = editingId ? `${API_URL}/${editingId}` : API_URL;
+      const url = editingId ? `${API_URL}/categories/${editingId}` : `${API_URL}/categories`;
 
       const res = await fetch(url, {
         method: method,
@@ -187,7 +187,7 @@ const CategoryManager = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa danh mục này?")) {
       try {
-        const res = await fetch(`${API_URL}/${id}`, {
+        const res = await fetch(`${API_URL}/categories/${id}`, {
           method: "DELETE",
           credentials: "include",
         });

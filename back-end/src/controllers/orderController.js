@@ -8,7 +8,7 @@ const crypto = require("crypto");
 const vnp_TmnCode = "Y4S5DHQ5";
 const vnp_HashSecret = "CRBZ1439KUDSKR375SLGOM6BTXFWB5OI";
 const vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-const vnp_ReturnUrl = "http://localhost:5173/order/vnpay_return"; // URL Frontend nhận kết quả
+const vnp_ReturnUrl = "https://electronic-home-shop.pages.dev/order/vnpay_return"; // URL Frontend nhận kết quả
 
 const create = async (req, res) => {
   try {

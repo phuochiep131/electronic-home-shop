@@ -17,6 +17,8 @@ import {
   MessageSquare,
 } from "lucide-react";
 
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
+
 const AdminLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -25,7 +27,7 @@ const AdminLayout = () => {
   // Hàm đăng xuất
   const handleLogout = async () => {
     try {
-      await axios.get("http://localhost:5000/api/auth/logout", {
+      await axios.get(`${API_URL}/auth/logout`, {
         withCredentials: true,
       });
       dispatch({ type: "AUTH_FAILURE" });

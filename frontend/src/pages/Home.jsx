@@ -20,7 +20,7 @@ import Banner from "../components/Banner";
 import ProductCard from "../components/ProductCard";
 
 // --- CẤU HÌNH API ---
-const API_URL = "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
 
 // --- HELPER ---
 const getCategoryStyle = (name) => {

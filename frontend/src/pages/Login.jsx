@@ -14,6 +14,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
+
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,7 +48,7 @@ const Login = () => {
     try {
       // Gọi API Login
       const response = await axios.post(
-        `http://localhost:5000/api/auth/login`,
+        `${API_URL}/auth/login`,
         {
           // QUAN TRỌNG: Hãy kiểm tra Backend authController.js
           // Nếu backend viết: const { email, password } = req.body

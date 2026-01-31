@@ -17,11 +17,13 @@ const login = async (req, res) => {
     const { username, password } = req.body;
     const { user, token } = await authService.loginUser(username, password);
 
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 3600 * 1000, // 1 giờ
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      maxAge: 60 * 60 * 1000, // 1 giờ
     });
 
     res.json({ message: "Đăng nhập thành công!", user, token });

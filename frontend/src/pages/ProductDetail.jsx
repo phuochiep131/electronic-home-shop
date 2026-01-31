@@ -21,7 +21,7 @@ import {
 import { useCart } from "../context/CartContext";
 import { toast } from "sonner";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
 
 const ProductDetail = () => {
   const { id } = useParams();

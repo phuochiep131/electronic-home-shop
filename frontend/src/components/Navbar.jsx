@@ -23,7 +23,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import defaultAvatar from "../assets/react.svg";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

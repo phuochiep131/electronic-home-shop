@@ -4,11 +4,13 @@ import { useAuth } from "./AuthContext"; // Import Auth để biết user đã l
 
 const CartContext = createContext();
 
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
+
 export const CartProvider = ({ children }) => {
   const [cartCount, setCartCount] = useState(0); // Số lượng hiển thị trên Navbar
   const { state } = useAuth(); // Lấy thông tin user
   const { isAuthenticated } = state;
-
+  
   // Hàm lấy số lượng giỏ hàng từ API
   const fetchCartCount = async () => {
     if (!isAuthenticated) {
@@ -16,7 +18,7 @@ export const CartProvider = ({ children }) => {
       return;
     }
     try {
-      const res = await axios.get("http://localhost:5000/api/cart", {
+      const res = await axios.get(`${API_URL}/cart`, {
         withCredentials: true, // Gửi cookie để xác thực
       });
       // Giả sử API trả về { cart: {...}, items: [...] }
@@ -43,7 +45,7 @@ export const CartProvider = ({ children }) => {
 
     try {
       await axios.post(
-        "http://localhost:5000/api/cart/add",
+        `${API_URL}/cart/add`,
         { productId, quantity },
         { withCredentials: true }
       );

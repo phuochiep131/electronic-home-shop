@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 
 // --- CẤU HÌNH API ---
-const API_URL = "http://localhost:5000/api/user"; 
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
 
 // --- CẤU HÌNH CLOUDINARY ---
 const CLOUD_NAME = "detransaw";      // Thay bằng tên Cloud của bạn
@@ -47,7 +47,7 @@ const UserManager = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch(API_URL, { credentials: "include" });
+      const response = await fetch(`${API_URL}/user`, { credentials: "include" });
       if (!response.ok) throw new Error("Không thể kết nối đến Server");
       
       const data = await response.json();
@@ -159,7 +159,7 @@ const UserManager = () => {
       }
 
       const method = editingId ? "PUT" : "POST";
-      const url = editingId ? `${API_URL}/${editingId}` : API_URL;
+      const url = editingId ? `${API_URL}/user/${editingId}` : `${API_URL}/user`;
 
       // BƯỚC 3: Gửi dữ liệu về Backend (Dạng JSON)
       const response = await fetch(url, {
@@ -189,7 +189,7 @@ const UserManager = () => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
 
     try {
-      const response = await fetch(`${API_URL}/${id}`, {
+      const response = await fetch(`${API_URL}/user/${id}`, {
         method: "DELETE",
         credentials: "include",
       });

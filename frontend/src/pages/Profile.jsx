@@ -22,7 +22,7 @@ import {
 import defaultAvatar from "../assets/react.svg";
 
 // --- CẤU HÌNH ---
-const API_UPDATE_URL = "http://localhost:5000/api/user/update"; // Route cho user tự sửa
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
 const CLOUD_NAME = "detransaw";
 const UPLOAD_PRESET = "web_upload";
 
@@ -117,7 +117,7 @@ const Profile = () => {
       };
 
       // 3. Gọi API Update
-      const response = await axios.put(API_UPDATE_URL, payload, {
+      const response = await axios.put(`${API_URL}/user/update`, payload, {
         withCredentials: true,
       });
 

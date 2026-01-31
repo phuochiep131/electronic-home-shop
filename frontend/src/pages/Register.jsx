@@ -15,6 +15,8 @@ import {
     AlertCircle
 } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
+
 const Register = () => {
     const navigate = useNavigate();
 
@@ -86,7 +88,7 @@ const Register = () => {
         }
 
         // --- 2. GỌI API ---
-        axios.post(`http://localhost:5000/api/auth/register`, {
+        axios.post(`${API_URL}/auth/register`, {
             fullname: formData.fullName, // Map đúng key backend yêu cầu
             email: formData.email,
             username: formData.username,

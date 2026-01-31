@@ -3,6 +3,8 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
+
 const VnpayReturn = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -13,7 +15,7 @@ const VnpayReturn = () => {
     const verify = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/orders/vnpay-verify?${searchParams.toString()}`,
+          `${API_URL}/orders/vnpay-verify?${searchParams.toString()}`,
           {
             withCredentials: true,
           }

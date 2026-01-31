@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 
 // --- CONFIG ---
-const API_URL = "http://localhost:5000/api/banners";
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
 const CLOUD_NAME = "detransaw";     
 const UPLOAD_PRESET = "web_upload"; 
 
@@ -37,7 +37,7 @@ const BannerManager = () => {
   const fetchBanners = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/all`, { withCredentials: true });
+      const res = await axios.get(`${API_URL}/banners/all`, { withCredentials: true });
       setBanners(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.error("Error fetching banners:", error);
@@ -136,7 +136,7 @@ const BannerManager = () => {
 
       const payload = { ...formData, image_url: finalImageUrl };
       const method = editingId ? "PUT" : "POST";
-      const url = editingId ? `${API_URL}/${editingId}` : API_URL;
+      const url = editingId ? `${API_URL}/banners/${editingId}` : `${API_URL}/banners`;
 
       await axios({
         method,
@@ -159,7 +159,7 @@ const BannerManager = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this banner?")) return;
     try {
-      await axios.delete(`${API_URL}/${id}`, { withCredentials: true });
+      await axios.delete(`${API_URL}/banners/${id}`, { withCredentials: true });
       setBanners(prev => prev.filter(b => b._id !== id));
     } catch (error) {
       alert("Failed to delete banner.");
@@ -168,7 +168,7 @@ const BannerManager = () => {
 
   const toggleActiveStatus = async (banner) => {
     try {
-      await axios.put(`${API_URL}/${banner._id}`, { is_active: !banner.is_active }, { withCredentials: true });
+      await axios.put(`${API_URL}/banners/${banner._id}`, { is_active: !banner.is_active }, { withCredentials: true });
       setBanners(prev => prev.map(b => b._id === banner._id ? { ...b, is_active: !b.is_active } : b));
     } catch (error) {
       alert("Failed to update status.");

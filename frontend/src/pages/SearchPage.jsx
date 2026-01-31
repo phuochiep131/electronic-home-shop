@@ -11,6 +11,8 @@ import {
 import ProductCard from "../components/ProductCard";
 import FilterSidebar from "../components/FilterSidebar";
 
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
+
 const SearchPage = () => {
   const [searchParams] = useSearchParams();
   const keyword = searchParams.get("keyword");
@@ -33,7 +35,7 @@ const SearchPage = () => {
       try {
         // Gọi API tìm kiếm theo keyword
         const res = await axios.get(
-          `http://localhost:5000/api/products?keyword=${keyword}`
+          `${API_URL}/products?keyword=${keyword}`
         );
         setOriginalProducts(res.data);
       } catch (error) {

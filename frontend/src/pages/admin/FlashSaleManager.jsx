@@ -16,8 +16,8 @@ import {
 } from "lucide-react";
 
 // --- CẤU HÌNH API ---
-const FLASHSALE_API_URL = "http://localhost:5000/api/flash-sale";
-const PRODUCT_API_URL = "http://localhost:5000/api/products";
+const FLASHSALE_API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
+const PRODUCT_API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
 
 const FlashSaleManager = () => {
   const [flashSales, setFlashSales] = useState([]);
@@ -66,8 +66,8 @@ const FlashSaleManager = () => {
     setLoading(true);
     try {
       const [resFlashSales, resProducts] = await Promise.all([
-        fetch(FLASHSALE_API_URL),
-        fetch(PRODUCT_API_URL),
+        fetch(`${FLASHSALE_API_URL}/flash-sale`),
+        fetch(`${PRODUCT_API_URL}/products`),
       ]);
 
       const dataFlashSales = await resFlashSales.json();
@@ -158,8 +158,8 @@ const FlashSaleManager = () => {
     try {
       const method = editingId ? "PUT" : "POST";
       const url = editingId
-        ? `${FLASHSALE_API_URL}/${editingId}`
-        : FLASHSALE_API_URL;
+        ? `${FLASHSALE_API_URL}/flash-sale/${editingId}`
+        : `${FLASHSALE_API_URL}/flash-sale`;
 
       const res = await fetch(url, {
         method: method,
@@ -183,7 +183,7 @@ const FlashSaleManager = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa chiến dịch này?")) {
       try {
-        const res = await fetch(`${FLASHSALE_API_URL}/${id}`, {
+        const res = await fetch(`${FLASHSALE_API_URL}/flash-sale/${id}`, {
           method: "DELETE",
         });
         if (res.ok) {
