@@ -21,7 +21,8 @@ import {
 import { useCart } from "../context/CartContext";
 import { toast } from "sonner";
 
-const API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
+const API_URL =
+  import.meta.env.VITE_BACKEND_API_URL || "http://localhost:5000/api";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -31,7 +32,7 @@ const ProductDetail = () => {
   // State dữ liệu
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
-  const [reviews, setReviews] = useState([]); // State lưu danh sách đánh giá
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mainImage, setMainImage] = useState("");
 
@@ -68,7 +69,6 @@ const ProductDetail = () => {
     const fetchProductData = async () => {
       try {
         setLoading(true);
-        // Gọi song song: Lấy chi tiết sản phẩm VÀ Lấy danh sách đánh giá
         const [productRes, reviewsRes] = await Promise.all([
           axios.get(`${API_URL}/products/${id}`),
           axios.get(`${API_URL}/reviews/product/${id}`),
@@ -76,14 +76,12 @@ const ProductDetail = () => {
 
         const data = productRes.data;
         setProduct(data);
-        setReviews(reviewsRes.data); // Lưu reviews vào state
+        setReviews(reviewsRes.data);
 
-        // Set ảnh chính
         const img =
           data.image_url || "https://placehold.co/600x600/png?text=No+Image";
         setMainImage(img);
 
-        // Lấy sản phẩm liên quan
         if (data.category_id && data.category_id._id) {
           const relatedRes = await axios.get(
             `${API_URL}/products?category=${data.category_id._id}`,
@@ -147,10 +145,12 @@ const ProductDetail = () => {
     );
   }
 
-  // --- LOGIC FLASH SALE & GIÁ ---
+  // --- LOGIC FLASH SALE & GIÁ (GIỮ NGUYÊN LOGIC CŨ NHƯ YÊU CẦU) ---
   const originalPrice = product.price;
   const now = new Date();
   const flashSale = product.flash_sale;
+
+  // Kiểm tra kỹ lưỡng thời gian
   const isFlashSaleActive =
     flashSale &&
     flashSale.status &&
@@ -158,22 +158,27 @@ const ProductDetail = () => {
     new Date(flashSale.end_date) >= now;
 
   let currentPrice, discountPercent;
+
   if (isFlashSaleActive) {
+    // Ưu tiên tính giá Flash Sale
     if (flashSale.sale_price) {
       currentPrice = flashSale.sale_price;
+      // Tính ngược lại % giảm giá nếu có giá sale cụ thể
+      discountPercent = Math.round(
+        ((originalPrice - currentPrice) / originalPrice) * 100,
+      );
     } else {
-      currentPrice = originalPrice * (1 - flashSale.discount_percent / 100);
+      discountPercent = flashSale.discount_percent;
+      currentPrice = originalPrice * (1 - discountPercent / 100);
     }
-    discountPercent = flashSale.discount_percent;
   } else {
+    // Giá thường
     discountPercent = product.discount || 0;
     currentPrice = originalPrice * (1 - discountPercent / 100);
   }
 
-  // Dữ liệu đánh giá thực tế
   const averageRating = product.average_rating || 0;
   const totalReviews = reviews.length;
-
   const galleryImages = [
     product.image_url,
     product.image_url,
@@ -311,7 +316,7 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {/* Policies */}
+              {/* Policies & Actions (Giữ nguyên) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
                 <div className="flex items-center gap-3 text-sm text-gray-700 p-2 rounded-lg hover:bg-gray-50 transition-colors">
                   <CheckCircle
@@ -340,7 +345,6 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-8">
                 <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden">
                   <button
@@ -386,7 +390,7 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* --- TABS SECTION --- */}
+          {/* --- TABS SECTION (Giữ nguyên) --- */}
           <div className="border-t border-gray-200">
             <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar">
               <button
@@ -410,7 +414,6 @@ const ProductDetail = () => {
             </div>
 
             <div className="p-6 md:p-10 min-h-[300px]">
-              {/* Tab Description */}
               {activeTab === "description" && (
                 <div className="prose max-w-none text-gray-700">
                   <p className="text-lg mb-4 leading-relaxed whitespace-pre-line">
@@ -419,8 +422,6 @@ const ProductDetail = () => {
                   </p>
                 </div>
               )}
-
-              {/* Tab Specs */}
               {activeTab === "specs" && (
                 <div className="max-w-3xl mx-auto">
                   <h3 className="font-bold text-xl mb-6 text-gray-900">
@@ -456,8 +457,6 @@ const ProductDetail = () => {
                   </div>
                 </div>
               )}
-
-              {/* Tab Reviews (Hiển thị đánh giá từ DB) */}
               {activeTab === "reviews" && (
                 <div className="max-w-4xl mx-auto">
                   <div className="mb-8 flex items-center justify-between">
@@ -468,7 +467,6 @@ const ProductDetail = () => {
                       Hiển thị {reviews.length} đánh giá
                     </div>
                   </div>
-
                   {reviews.length > 0 ? (
                     <div className="space-y-6">
                       {reviews.map((review) => (
@@ -539,7 +537,7 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* --- RELATED PRODUCTS --- */}
+        {/* --- RELATED PRODUCTS (Giữ nguyên) --- */}
         <div className="mt-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl md:text-2xl font-bold text-gray-900">
@@ -555,6 +553,7 @@ const ProductDetail = () => {
           {relatedProducts.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {relatedProducts.map((item) => {
+                // Logic tính giá sale cho sản phẩm tương tự
                 const itemFlashSale = item.flash_sale;
                 const isItemFlashSale =
                   itemFlashSale &&
@@ -563,8 +562,18 @@ const ProductDetail = () => {
                 const itemOriginalPrice = item.price;
                 let itemCurrentPrice, itemDiscount;
                 if (isItemFlashSale) {
-                  itemCurrentPrice = itemFlashSale.sale_price;
-                  itemDiscount = itemFlashSale.discount_percent;
+                  if (itemFlashSale.sale_price) {
+                    itemCurrentPrice = itemFlashSale.sale_price;
+                    itemDiscount = Math.round(
+                      ((itemOriginalPrice - itemCurrentPrice) /
+                        itemOriginalPrice) *
+                        100,
+                    );
+                  } else {
+                    itemDiscount = itemFlashSale.discount_percent;
+                    itemCurrentPrice =
+                      itemOriginalPrice * (1 - itemDiscount / 100);
+                  }
                 } else {
                   itemDiscount = item.discount || 0;
                   itemCurrentPrice =
@@ -592,7 +601,7 @@ const ProductDetail = () => {
                         >
                           {isItemFlashSale && (
                             <Zap size={8} className="inline mr-1 fill-white" />
-                          )}
+                          )}{" "}
                           -{itemDiscount}%
                         </span>
                       )}
