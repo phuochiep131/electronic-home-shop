@@ -26,6 +26,7 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: "https://electronic-home-shop.pages.dev",
+    //origin: "http://localhost:5173",    
     credentials: true,
   }),
 );
